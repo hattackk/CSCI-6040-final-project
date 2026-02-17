@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "fitd-repro"
+version = "0.1.0"
+description = "Reproducibility toolkit for FITD jailbreaking experiments (CSCI/DASC 6040 final project)."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+  "openai>=1.40.0",
+  "tqdm>=4.66.0",
+]
+
+[project.optional-dependencies]
+local = [
+  "torch>=2.2.0",
+  "transformers>=4.45.0",
+  "accelerate>=0.33.0",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]

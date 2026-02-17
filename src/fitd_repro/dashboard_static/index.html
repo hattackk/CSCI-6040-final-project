@@ -1,0 +1,207 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FITD Matrix Dashboard</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <canvas id="matrixRain" aria-hidden="true"></canvas>
+
+    <main class="shell">
+      <header class="hero panel reveal">
+        <div class="hero-copy">
+          <p class="kicker">Live Repro Console</p>
+          <h1>Foot-In-The-Door Matrix Dashboard</h1>
+          <p class="subtitle">
+            Track prompt-steering experiments in real time: model load, per-example progress, and
+            condition-level ASR shifts.
+          </p>
+        </div>
+        <div class="hero-meta">
+          <div class="chip">
+            <span>Server Time</span>
+            <strong id="serverTime">-</strong>
+          </div>
+          <div class="chip">
+            <span>Active Batch</span>
+            <strong id="activeBatch">None</strong>
+          </div>
+          <div class="chip">
+            <span>Models Seen</span>
+            <strong id="modelsSeen">0</strong>
+          </div>
+        </div>
+      </header>
+
+      <section class="layout">
+        <section class="panel controls reveal">
+          <h2>Launch Matrix Run</h2>
+          <form id="runForm">
+            <label>
+              <span>Backend</span>
+              <select id="backend" name="backend">
+                <option value="hf">hf (local)</option>
+                <option value="openai">openai (api)</option>
+                <option value="mock">mock</option>
+              </select>
+            </label>
+            <label>
+              <span>Model</span>
+              <input id="model" name="model" value="Qwen/Qwen2.5-3B-Instruct" />
+            </label>
+            <label>
+              <span>Dataset Path</span>
+              <input id="datasetPath" name="datasetPath" value="data/advbench/sample_prompts.csv" />
+            </label>
+            <div class="row">
+              <label>
+                <span>FITD Variant</span>
+                <select id="fitdVariant" name="fitdVariant">
+                  <option value="scaffold">scaffold (local)</option>
+                  <option value="author">author (pre-generated)</option>
+                </select>
+              </label>
+              <label>
+                <span>Author Track</span>
+                <select id="authorPromptTrack" name="authorPromptTrack">
+                  <option value="prompts1">prompts1</option>
+                  <option value="prompts2">prompts2</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>Author Prompt File (Optional)</span>
+              <input
+                id="authorPromptFile"
+                name="authorPromptFile"
+                placeholder="data/author_fitd/prompt_jailbreakbench.json"
+                value=""
+              />
+            </label>
+            <label>
+              <span>Author Warmup Cap (0 = full chain)</span>
+              <input
+                id="authorMaxWarmups"
+                name="authorMaxWarmups"
+                type="number"
+                min="0"
+                max="20"
+                value="4"
+              />
+            </label>
+            <div class="row">
+              <label>
+                <span>Max Examples</span>
+                <input id="maxExamples" name="maxExamples" type="number" min="1" max="5000" value="20" />
+              </label>
+              <label>
+                <span>Max Tokens</span>
+                <input id="maxTokens" name="maxTokens" type="number" min="16" max="2048" value="128" />
+              </label>
+            </div>
+            <div class="row">
+              <label>
+                <span>Temperature</span>
+                <input id="temperature" name="temperature" type="number" min="0" max="2" step="0.1" value="0.2" />
+              </label>
+              <label>
+                <span>Sleep Seconds</span>
+                <input id="sleepSeconds" name="sleepSeconds" type="number" min="0" max="5" step="0.1" value="0.0" />
+              </label>
+            </div>
+            <button id="startButton" type="submit">Start 3-Condition Matrix</button>
+            <p id="formMessage" class="form-message">Ready.</p>
+            <p id="backendPolicy" class="backend-policy"></p>
+          </form>
+        </section>
+
+        <section class="panel progress reveal">
+          <h2>Batch Progress</h2>
+          <div id="overallStatus" class="status-line">No active run.</div>
+          <div class="progress-bar">
+            <div id="overallBar" class="progress-fill"></div>
+          </div>
+          <div id="runList" class="run-list"></div>
+        </section>
+      </section>
+
+      <section class="panel reveal">
+        <h2>Condition Matrix</h2>
+        <p class="section-copy">
+          Compare refusal-to-compliance behavior across Standard, FITD, and FITD + Vigilant conditions.
+        </p>
+        <div id="matrixGrid" class="matrix-grid"></div>
+      </section>
+
+      <section class="panel reveal">
+        <h2>Foot-In-The-Door Effect</h2>
+        <p class="section-copy">
+          Highlights when FITD makes the model comply after a Standard refusal, and when Vigilant recovers that refusal.
+        </p>
+        <div id="effectCards" class="effect-cards"></div>
+        <div id="effectTurns" class="effect-turns"></div>
+        <div id="transitionWrap" class="transition-wrap">
+          <table class="transition-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Prompt Goal</th>
+                <th>Standard</th>
+                <th>FITD</th>
+                <th>Vigilant</th>
+                <th>First Non-Refusal</th>
+                <th>Transition</th>
+              </tr>
+            </thead>
+            <tbody id="transitionBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="layout">
+        <section class="panel reveal">
+          <h2>Live Trace</h2>
+          <div id="activityLog" class="activity-log"></div>
+        </section>
+
+        <section class="panel reveal">
+          <h2>Model Stats</h2>
+          <div id="modelStats" class="model-stats"></div>
+        </section>
+      </section>
+
+      <section class="panel reveal">
+        <div class="trace-head">
+          <h2>Prompt / Response Timeline</h2>
+          <div class="trace-controls">
+            <label>
+              <span>Run</span>
+              <select id="traceRun"></select>
+            </label>
+            <label>
+              <span>Show</span>
+              <select id="traceFilter">
+                <option value="all" selected>all responses</option>
+                <option value="refusal">refusals only</option>
+                <option value="success">successes only</option>
+              </select>
+            </label>
+            <label class="trace-toggle">
+              <input id="traceReveal" type="checkbox" />
+              <span>Reveal Responses</span>
+            </label>
+          </div>
+        </div>
+        <p class="section-copy">
+          Turn-by-turn view to inspect when FITD transitions from refusal to non-refusal.
+        </p>
+        <div id="traceMeta" class="trace-meta">No run selected.</div>
+        <div id="traceList" class="trace-list"></div>
+      </section>
+    </main>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
