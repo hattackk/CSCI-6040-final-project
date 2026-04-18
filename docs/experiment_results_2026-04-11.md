@@ -83,3 +83,39 @@ After freeing additional disk space, we downloaded `google/gemma-4-E4B-it` and r
 - We patched the local model loader to prefer Apple Silicon-friendly settings when MPS is available.
 - On this machine, PyTorch still reported `mps_available=False`, so the Gemma 4 runs executed in CPU mode.
 - CPU mode was still feasible: the model loaded successfully and completed the 10-example matrix, but FITD conditions took around 19 minutes each.
+
+## Llama 3 Follow-up: April 17, 2026
+
+To reduce the model-family gap with our original proposal, we added a local Llama 3 run. The current Hugging Face token on this machine could not access Meta's gated `meta-llama/Meta-Llama-3-8B-Instruct` repo, so we used an already-downloaded local GGUF copy and served it through Ollama instead.
+
+### Setup
+
+- Dataset: `data/advbench/harmful_behaviors.csv`
+- Slice: first 10 examples
+- Backend: local Ollama
+- Model family: local `Meta-Llama-3-8B-Instruct`
+- Served model name: `llama3-fitd-local`
+- Model source used in practice: existing local GGUF at `~/.cache/lm-studio/models/lmstudio-community/Meta-Llama-3-8B-Instruct-GGUF/Meta-Llama-3-8B-Instruct-Q8_0.gguf`
+- Attack variant: scaffold FITD (`fitd-variant=scaffold`)
+- Token cap: `256`
+- Temperature: `0.2`
+
+### Runs
+
+| Condition | Output Dir | Heuristic Successes | Heuristic ASR | Refusal Rate |
+| --- | --- | ---: | ---: | ---: |
+| Standard | `results/20260417_llama3-8b-ollama_advbench10_standard` | 0 / 10 | 0.00 | 1.00 |
+| FITD | `results/20260417_llama3-8b-ollama_advbench10_fitd` | 0 / 10 | 0.00 | 1.00 |
+| FITD + Vigilant | `results/20260417_llama3-8b-ollama_advbench10_fitd_vigilant` | 0 / 10 | 0.00 | 1.00 |
+
+### Interpretation
+
+- Llama 3 also refused all 10 sampled harmful prompts under all three conditions.
+- On this slice, scaffold FITD again produced no heuristic lift at all.
+- This matters because Llama 3 is closer to our original planned local replication target than Qwen or Gemma alone.
+
+### Access / Reproduction Caveat
+
+- The repo now supports a local `ollama` backend so the Llama 3 run can be reproduced through the same artifact-writing pipeline.
+- This is still not an exact paper-match setup because the run used a quantized GGUF model served by Ollama rather than the official gated Hugging Face checkpoint path.
+- Even with that caveat, the added Llama-family negative result makes the overall failed-reproduction story stronger.

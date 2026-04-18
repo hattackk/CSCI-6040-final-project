@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--backend",
         type=str,
         default="mock",
-        choices=["mock", "openai", "hf"],
+        choices=["mock", "openai", "hf", "ollama"],
         help="Model backend to use.",
     )
     parser.add_argument(

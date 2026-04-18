@@ -5,7 +5,7 @@ Reproduction project for EMNLP 2025 paper:
 
 This repository is now set up to run:
 1. Phase 1 API baseline (`gpt-4o-mini` by default)
-2. Phase 2 local replication (Llama-style local model via Hugging Face)
+2. Phase 2 local replication (Llama-style local model via Hugging Face or Ollama)
 3. Extension experiment with a vigilant system prompt defense
 
 ## Assignment Alignment
@@ -76,6 +76,11 @@ bash scripts/run_phase1_api_baseline.sh
 7. Run local replication (Phase 2):
 ```bash
 bash scripts/run_phase2_local_llama3.sh
+```
+
+Optional local Ollama path for an already-registered Llama model:
+```bash
+bash scripts/run_phase2_local_llama3_ollama.sh
 ```
 
 If you do not want to install editable packages, run with:
@@ -154,9 +159,10 @@ Set `--author-max-warmup-turns 0` to use the full author chain.
 ## Safety Notes
 
 1. Default recommendation: use local `hf` or `mock` backends for FITD experiments.
-2. OpenAI backend is intentionally disabled unless `FITD_ALLOW_OPENAI=1` is set.
-3. If your course requires API comparisons, keep prompts policy-compliant and document instructor approval.
-4. `fitd-variant author` reuses official pre-generated multi-turn prompt chains; this is prompt-technique parity, not the full adaptive pipeline in `FITD.py`.
+2. Local `ollama` backend is also supported if you already have a compatible model registered in Ollama.
+3. OpenAI backend is intentionally disabled unless `FITD_ALLOW_OPENAI=1` is set.
+4. If your course requires API comparisons, keep prompts policy-compliant and document instructor approval.
+5. `fitd-variant author` reuses official pre-generated multi-turn prompt chains; this is prompt-technique parity, not the full adaptive pipeline in `FITD.py`.
 
 ## Repository Layout
 
