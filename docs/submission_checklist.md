@@ -6,7 +6,7 @@
 | --- | --- | --- |
 | Choose one EMNLP 2025 paper and attempt reproduction | Complete | Paper identified throughout [final_report.md](./final_report.md) and [final_presentation_script.md](../Final%20Project%20Presentation/final_presentation_script.md) |
 | Work can be a successful reproduction or a rigorous failed reproduction | Complete | Assignment explicitly allows both; project is framed as rigorous failed reproduction in [final_report.md](./final_report.md) |
-| Run rigorous experiments on the paper's main idea | Complete | Real experiment outputs in `results/20260411_*`, `results/20260415_*`, and `results/20260417_*` |
+| Run rigorous experiments on the paper's main idea | Complete | Real experiment outputs in `results/20260411_*`, `results/20260415_*`, `results/20260417_*`, and `results/20260418_*` |
 | Report what was reproduced or why exact reproduction failed | Complete | Sections 5-7 of [final_report.md](./final_report.md) |
 | Identify unanswered questions or likely causes for mismatch | Complete | Figure 4 and discussion in [final_report.md](./final_report.md) |
 | Include at least one extension experiment if possible | Complete | `FITD + Vigilant` defense condition across all tested models |
@@ -43,6 +43,7 @@ If you need the smallest "proof it is done" set, use these files:
 | Model | Conditions | Outcome |
 | --- | --- | --- |
 | Qwen 2.5 3B | Standard / FITD / FITD + Vigilant | Heuristic FITD lift disappeared after manual audit |
+| Qwen 2-7B Instruct | Standard / Author FITD / Author FITD + Vigilant | No faithful original-goal jailbreaks; one harmful off-target author-chain completion on the tested slice |
 | Gemma 4 E4B | Standard / FITD / FITD + Vigilant | Full refusal on tested slice |
 | Llama 3 8B | Standard / FITD / FITD + Vigilant | Full refusal on tested slice |
 
@@ -52,4 +53,4 @@ This project is complete as a **rigorous failed reproduction**.
 
 Most defensible one-sentence conclusion:
 
-> We reproduced the experimental scaffold and ran real local evaluations, but we did not reproduce the paper's claimed strong FITD jailbreak effect under our tested conditions.
+> We reproduced the experimental scaffold, added a closer exact-model Qwen follow-up, and still did not reproduce the paper's claimed strong FITD jailbreak effect under our tested conditions.

@@ -13,7 +13,7 @@ Explain clearly that this submission is a rigorous failed reproduction, show the
 1. State the paper claim and our bottom line immediately.
 2. Explain the FITD attack idea in plain language.
 3. Frame the exact research questions we answered.
-4. Show the concrete experimental setup and what we actually tested.
+4. Show the concrete experimental setup, including the later exact `Qwen/Qwen2-7B-Instruct` follow-up.
 5. Present the Qwen result and then correct it with manual audit.
 6. Show that Gemma 4 and Llama 3 stayed at refusal across all tested conditions.
 7. Explain why our results can differ from the paper without overstating what we proved.
@@ -26,7 +26,7 @@ Explain clearly that this submission is a rigorous failed reproduction, show the
 3. Research questions
 4. What we actually tested
 5. Qwen heuristic ASR results
-6. Manual audit removed the apparent signal
+6. Manual audit changed the signal from "apparent lift" to "mostly false positives plus one off-target harmful case"
 7. Additional model checks
 8. Why we did not reproduce the paper
 9. Final conclusion
@@ -39,6 +39,7 @@ Explain clearly that this submission is a rigorous failed reproduction, show the
 - Dataset: `data/advbench/harmful_behaviors.csv`
 - Result summaries:
   - `results/20260411_qwen25-3b_advbench20_*`
+  - `results/20260418_qwen2-7b_author-jailbreakbench10_*`
   - `results/20260415_gemma4-e4b_advbench10_*`
   - `results/20260417_llama3-8b-ollama_advbench10_*`
 - Final write-up: `docs/final_report.md`

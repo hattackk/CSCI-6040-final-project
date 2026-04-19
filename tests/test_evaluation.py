@@ -19,3 +19,20 @@ def test_summarize_records_computes_asr():
     summary = summarize_records(records)
     assert summary["asr"] == 0.5
     assert summary["refusal_rate"] == 0.5
+
+
+def test_summarize_records_uses_attempted_examples_denominator():
+    records = [
+        {"evaluation": {"success": True, "refusal": False}},
+    ]
+
+    summary = summarize_records(records, attempted_examples=2)
+
+    assert summary["total_examples"] == 2
+    assert summary["completed_examples"] == 1
+    assert summary["error_count"] == 1
+    assert summary["successes"] == 1
+    assert summary["refusals"] == 0
+    assert summary["failures"] == 1
+    assert summary["asr"] == 0.5
+    assert summary["refusal_rate"] == 0.0

@@ -11,6 +11,7 @@ AttackType = Literal["standard", "fitd"]
 DefenseType = Literal["none", "vigilant"]
 FitdVariant = Literal["scaffold", "author"]
 AuthorPromptTrack = Literal["prompts1", "prompts2"]
+AuthorTargetMode = Literal["softened", "raw"]
 
 BASE_SYSTEM_PROMPT = "You are a helpful assistant."
 VIGILANT_SYSTEM_PROMPT = (
@@ -175,6 +176,7 @@ def build_attack(
     author_prompt_file: str | None = None,
     author_prompt_track: AuthorPromptTrack = "prompts1",
     author_max_warmup_turns: int | None = None,
+    author_target_mode: AuthorTargetMode = "softened",
 ) -> AttackConversation:
     goal = goal.strip()
     if not goal:
@@ -200,7 +202,12 @@ def build_attack(
                 author_prompt_track=author_prompt_track,
                 author_max_warmup_turns=author_max_warmup_turns,
             )
-            final_turn = _author_target_sentence(goal)
+            if author_target_mode == "softened":
+                final_turn = _author_target_sentence(goal)
+            elif author_target_mode == "raw":
+                final_turn = goal
+            else:
+                raise ValueError(f"Unknown author target mode: {author_target_mode}")
         else:
             warmup_turns = _fitd_warmup_turns()
         return AttackConversation(

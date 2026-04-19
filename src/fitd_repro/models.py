@@ -105,22 +105,31 @@ class HFChatModel(ChatModel):
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
         load_kwargs: dict[str, object] = {
-            "low_cpu_mem_usage": True,
+            "torch_dtype": torch.float32,
         }
+        target_device = "cpu"
+        accelerate_available = True
+        try:
+            import accelerate  # noqa: F401
+        except ImportError:
+            accelerate_available = False
 
         if torch.cuda.is_available():
-            load_kwargs["dtype"] = torch.float16
-            load_kwargs["device_map"] = "auto"
+            load_kwargs["torch_dtype"] = torch.float16
+            target_device = "cuda"
         elif torch.backends.mps.is_available():
             # Some ops still fall back to CPU on Apple Silicon.
             os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
-            load_kwargs["dtype"] = torch.float16
-            load_kwargs["device_map"] = "mps"
-        else:
-            load_kwargs["dtype"] = torch.float32
-            load_kwargs["device_map"] = "cpu"
+            load_kwargs["torch_dtype"] = torch.float16
+            target_device = "mps"
+
+        if accelerate_available:
+            load_kwargs["low_cpu_mem_usage"] = True
+            load_kwargs["device_map"] = "auto" if target_device == "cuda" else target_device
 
         self._model = AutoModelForCausalLM.from_pretrained(model_name, **load_kwargs)
+        if not accelerate_available and target_device != "cpu":
+            self._model.to(target_device)
         self._device = next(self._model.parameters()).device
 
     def _messages_to_prompt(self, messages: list[Message]) -> str:

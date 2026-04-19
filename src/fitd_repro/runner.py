@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
 
-from .attacks import AttackType, AuthorPromptTrack, DefenseType, FitdVariant, build_attack, resolve_author_prompt_file
+from .attacks import AttackType, AuthorPromptTrack, AuthorTargetMode, DefenseType, FitdVariant, build_attack, resolve_author_prompt_file
 from .dataset import load_examples
 from .evaluation import evaluate_response, summarize_records
 from .models import build_model
@@ -87,6 +87,7 @@ def _run_single_example(
     max_tokens: int,
     temperature: float,
     sleep_seconds: float,
+    author_target_mode: AuthorTargetMode = "softened",
     turn_start_logger: Callable[[str, int, str], None] | None = None,
     turn_logger: Callable[[str, int, str, str], None] | None = None,
 ) -> dict:
@@ -100,6 +101,7 @@ def _run_single_example(
         author_prompt_file=author_prompt_file,
         author_prompt_track=author_prompt_track,
         author_max_warmup_turns=author_max_warmup_turns,
+        author_target_mode=author_target_mode,
     )
     messages: list[Message] = []
     turn_trace: list[dict] = []
@@ -172,6 +174,7 @@ def run_experiment(
     max_tokens: int,
     temperature: float,
     sleep_seconds: float,
+    author_target_mode: AuthorTargetMode = "softened",
     event_callback: Callable[[dict], None] | None = None,
 ) -> dict:
     out_dir = Path(output_dir)
@@ -305,6 +308,7 @@ def run_experiment(
                 author_prompt_file=resolved_author_prompt_file,
                 author_prompt_track=author_prompt_track,
                 author_max_warmup_turns=author_max_warmup_turns,
+                author_target_mode=author_target_mode,
                 max_tokens=max_tokens,
                 temperature=temperature,
                 sleep_seconds=sleep_seconds,
@@ -364,7 +368,7 @@ def run_experiment(
                 },
             )
 
-    summary = summarize_records(records)
+    summary = summarize_records(records, attempted_examples=total_examples)
     summary.update(
         {
             "timestamp_utc": _utc_now_iso(),
@@ -377,6 +381,7 @@ def run_experiment(
             "author_prompt_file": resolved_author_prompt_file,
             "author_prompt_track": author_prompt_track,
             "author_max_warmup_turns": author_max_warmup_turns,
+            "author_target_mode": author_target_mode,
             "max_examples": max_examples,
             "start_index": start_index,
             "max_tokens": max_tokens,

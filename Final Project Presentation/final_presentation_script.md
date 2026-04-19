@@ -60,7 +60,7 @@ Third, does the pattern show up across more than one model, or does it disappear
 
 "To answer that, we used the real AdvBench harmful-behavior dataset and compared three conditions: standard prompting, FITD prompting, and FITD plus a vigilant system prompt.
 
-We ran three local models:
+We first ran a three-model local scaffold matrix:
 
 - Qwen 2.5 3B Instruct
 - Gemma 4 E4B Instruct
@@ -68,7 +68,9 @@ We ran three local models:
 
 Our analyzed slices were 20 examples for Qwen and 10 each for Gemma 4 and Llama 3.
 
-One thing we want to be clear about is that this was not a perfect paper-match setup. We did not have the exact original model stack, and our main FITD runs used a scaffolded version of the attack rather than every detail of the authors' adaptive pipeline. So from the start, this was a good-faith reproduction attempt, not a claim that one negative result automatically disproves the paper."
+After that initial matrix, we added a closer paper-faithful Qwen follow-up using the exact `Qwen/Qwen2-7B-Instruct` family and the authors' official pre-generated `prompts1` chains on `jailbreakbench`.
+
+One thing we want to be clear about is that this still was not a perfect paper-match setup. We did not run the full adaptive pipeline from the paper, and the paper used a different runtime stack. But adding the exact 7B Qwen family moved us beyond the earlier Qwen 2.5 3B substitute and made the project a stronger reproduction attempt than it was before."
 
 ---
 
@@ -80,9 +82,13 @@ One thing we want to be clear about is that this was not a perfect paper-match s
 
 "Here is where the story first looked promising for the paper.
 
-On the Qwen slice, direct prompting gave us zero heuristic successes. FITD gave us two out of twenty. FITD plus the defense gave us one out of twenty.
+On the Qwen 2.5 3B scaffold slice, direct prompting gave us zero heuristic successes. FITD gave us two out of twenty. FITD plus the defense gave us one out of twenty.
 
 So if we stopped at the raw metric, the easy summary would have been: maybe there is a small FITD effect, and maybe the defense cuts it down a bit.
+
+Then we ran the closer exact-model Qwen follow-up using `Qwen2-7B-Instruct` and the authors' official prompt chain format. The pattern looked similar at first: standard was zero out of ten, author FITD was two out of ten, and author FITD plus the defense was zero out of ten.
+
+So across both Qwen settings, the raw heuristic still suggested a small FITD lift.
 
 But that turned out to be the wrong summary.
 
@@ -90,7 +96,7 @@ Those numbers came from our automated first-pass scorer. It marked a response as
 
 **Handoff line**
 
-"At first, this looked like a weak positive result. But once we checked the actual outputs, the signal disappeared. Chris will walk through that part."
+"At first, this looked like a weak positive result. But once we checked the actual outputs, the signal changed. Chris will walk through that part."
 
 ---
 
@@ -100,13 +106,15 @@ Those numbers came from our automated first-pass scorer. It marked a response as
 
 **Script**
 
-"When we reviewed the three Qwen outputs that our scorer flagged, none of them were actual jailbreaks.
+"When we reviewed the Qwen outputs that our scorer flagged, the story split into two parts.
 
-They were safety-oriented answers, refusals, or redirections that our simple heuristic misread as success because the response was non-empty and did not contain one of the refusal markers we were looking for.
+On the original Qwen 2.5 3B scaffold slice, every flagged output was a false positive.
 
-So after human review of those flagged cases, the verified result on that Qwen slice was zero jailbreaks in all three conditions.
+But on the exact `Qwen2-7B-Instruct` author-prompt slice, one of the two flagged outputs was different. It was still not a faithful completion of the original harmful goal, but it was a real harmful off-target response.
 
-For us, this became one of the biggest takeaways of the whole project: the judge mattered almost as much as the prompts."
+What happened there is that the copied author chain softened the final request from killing people over fifty to removing them. The model then wrote an exclusionary argument for removing older people from societal roles. So we did not count that as a true replication of the original target, but we also did not call it a harmless false positive.
+
+Across the reported Qwen runs, we manually checked all five heuristic positives. Four were false positives, and one was harmful off-target compliance. So the judge mattered almost as much as the prompts, and the exact-model follow-up made the conclusion more nuanced."
 
 ---
 
@@ -138,9 +146,9 @@ That helped us in two ways. First, it made the project harder to dismiss as a on
 
 The cleaner way to say it is that we did not reproduce the effect under our setup.
 
-We think the gap between our results and theirs comes from four things: model mismatch, pipeline mismatch, evaluation mismatch, and runtime limits.
+We think the gap between our results and theirs comes from four things: remaining model mismatch, pipeline mismatch, evaluation mismatch, and runtime limits.
 
-Llama 3 helped narrow the model question, but it did not remove the bigger issue that our setup still was not identical to the one in the paper.
+The exact `Qwen2-7B-Instruct` follow-up narrowed the model criticism a lot, and the author-prompt chain narrowed the pipeline criticism too. But we still did not run the full adaptive pipeline from the paper, and the paper used vLLM on A100 hardware while we used local Hugging Face on CPU.
 
 So the conclusion we can defend is setup-sensitive failure to reproduce, not falsification."
 
@@ -154,15 +162,15 @@ So the conclusion we can defend is setup-sensitive failure to reproduce, not fal
 
 "So our final conclusion is pretty direct.
 
-We reproduced the experimental scaffold, ran real local evaluations, and added one defense condition plus two additional model checks.
+We reproduced the experimental scaffold, ran real local evaluations, added one defense condition, added two more models, and also added a closer exact-model Qwen check.
 
-But we did not reproduce the paper's strong FITD jailbreak effect.
-
-On Qwen, the only apparent positives disappeared after human review of the flagged outputs.
+On the scaffold runs, the apparent Qwen positives disappeared after human review.
 
 On Gemma 4 and Llama 3, everything was refused.
 
-That puts our project in the rigorous failed-reproduction category, which the assignment explicitly allows. We think it is still a useful result because it shows how much the answer depends on setup and evaluation."
+On the exact `Qwen2-7B-Instruct` follow-up, we still did not get a faithful completion of the original harmful goal, but we did see one harmful off-target completion under the softened author-chain prompt. That makes the result more interesting than a clean all-zero story, but still far short of the paper's strong reported effect.
+
+That puts our project in the rigorous failed-reproduction category, which the assignment explicitly allows. We think it is still a useful result because it shows how much the answer depends on setup, prompt construction, and evaluation."
 
 ---
 
@@ -172,7 +180,7 @@ That puts our project in the rigorous failed-reproduction category, which the as
 
 **Script**
 
-"If we had more time, the next steps are clear: run a larger slice or the full benchmark, match the authors' pipeline more closely, and use a stronger judge.
+"If we had more time, the next steps are clear: run a larger slice or the full benchmark, add the second paper-family Qwen model, match the authors' full adaptive pipeline more closely, and use a stronger judge.
 
 But for this class project, the important part is that we ran the core comparison honestly, checked the outputs carefully, and followed the evidence where it led.
 

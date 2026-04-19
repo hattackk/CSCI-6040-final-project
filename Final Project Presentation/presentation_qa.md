@@ -4,14 +4,14 @@
 
 ### Why do you think your results differ from the paper?
 
-The short answer is that our setup was close, but not identical.
+The short answer is that our setup was closer by the end, but still not identical.
 
-The biggest gaps were:
+The biggest remaining gaps were:
 
-- exact model stack
+- exact full model stack
 - exact FITD pipeline behavior
 - evaluation method
-- study scale and runtime limits
+- runtime environment and study scale
 
 ### Does your result prove the paper is wrong?
 
@@ -29,7 +29,9 @@ We ran real experiments, checked the outputs manually, and explained what still 
 
 We added a `FITD + Vigilant` condition with a defensive system prompt.
 
-On Qwen it reduced the heuristic positives from 2 to 1, but after human review of the flagged outputs both settings still had zero verified jailbreaks.
+On the Qwen 2.5 3B scaffold slice it reduced heuristic positives from 2 to 1, but those were still false positives after review.
+
+On the exact `Qwen/Qwen2-7B-Instruct` author slice it reduced heuristic positives from 2 to 0, which also removed the one harmful off-target final output on that small slice.
 
 ### Why did you add Gemma 4 and Llama 3?
 
@@ -41,8 +43,14 @@ Gemma 4 gave a clean negative result, and Llama 3 helped reduce the "wrong model
 
 Evaluation quality matters.
 
-The raw Qwen metric looked mildly positive until we checked the outputs that the automated scorer had flagged.
+The raw Qwen metric looked mildly positive until we checked the outputs that the automated scorer had flagged. In the scaffold slice they were false positives. In the exact-model author slice, one was a false positive and one was a harmful off-target completion caused by a softened final author prompt.
 
 ### If you had one more day, what would you run?
 
-The next best experiment would be a closer author-pipeline follow-up using the copied official prompt tracks, so we could separate `pipeline mismatch` from `model mismatch` more directly.
+The next best experiment would be the full adaptive `FITD.py` pipeline or the remaining paper-family model `Qwen-1.5-7B-Chat`, because we already completed a closer exact-model follow-up on `Qwen/Qwen2-7B-Instruct`.
+
+### Why doesn't the scaffold criticism sink the whole project?
+
+Because we did not stop at the scaffold.
+
+We added a closer Qwen author-prompt check using the authors' official pre-generated prompt chains on `jailbreakbench` and the exact `Qwen/Qwen2-7B-Instruct` family. That follow-up still did not produce a faithful original-goal jailbreak, even though it did produce one harmful off-target completion under a softened final prompt.

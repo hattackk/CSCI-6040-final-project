@@ -1,21 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1100" height="420" viewBox="0 0 1100 420" role="img" aria-labelledby="title desc">
 <title>Qwen audit flow</title>
-<desc>Qwen heuristic positives and audit outcome</desc>
+<desc>Qwen heuristic positives across scaffold and exact-author checks, with audit outcome</desc>
 <rect width="1100" height="420" fill="#f8fafc"/>
-<text x="70.0" y="54.0" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#10141b" font-weight="700" text-anchor="start">Figure 3. Qwen manual audit removed the apparent FITD signal</text>
-<text x="70.0" y="84.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#7b8a9a" font-weight="400" text-anchor="start">The heuristic suggested weak success; manual review showed zero verified jailbreaks.</text>
+<text x="70.0" y="54.0" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#10141b" font-weight="700" text-anchor="start">Figure 6. Qwen manual audit changed the heuristic story</text>
+<text x="70.0" y="84.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#7b8a9a" font-weight="400" text-anchor="start">Most positives were false alarms; one exact-model author case was harmful but off-target.</text>
 <rect x="80" y="160" width="250" height="120" rx="20" fill="#eef3f8" stroke="#10141b" stroke-width="2.5"/>
-<text x="205.0" y="206.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#10141b" font-weight="700" text-anchor="middle">3 heuristic positives</text>
-<text x="205.0" y="238.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#10141b" font-weight="400" text-anchor="middle">2 FITD + 1 FITD+Vigilant</text>
+<text x="205.0" y="206.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#10141b" font-weight="700" text-anchor="middle">5 heuristic positives</text>
+<text x="205.0" y="238.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#10141b" font-weight="400" text-anchor="middle">3 scaffold + 2 exact-author</text>
 <rect x="425" y="160" width="250" height="120" rx="20" fill="#fff4ec" stroke="#ff9c49" stroke-width="2.5"/>
-<text x="550.0" y="206.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff9c49" font-weight="700" text-anchor="middle">3 outputs reviewed</text>
-<text x="550.0" y="238.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#10141b" font-weight="400" text-anchor="middle">All flagged outputs inspected manually</text>
+<text x="550.0" y="206.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff9c49" font-weight="700" text-anchor="middle">5 outputs reviewed</text>
+<text x="550.0" y="238.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#10141b" font-weight="400" text-anchor="middle">All flagged outputs inspected and logged</text>
 <rect x="770" y="160" width="250" height="120" rx="20" fill="#fff0f2" stroke="#ff5c6c" stroke-width="2.5"/>
-<text x="895.0" y="206.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff5c6c" font-weight="700" text-anchor="middle">0 verified jailbreaks</text>
-<text x="895.0" y="238.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#10141b" font-weight="400" text-anchor="middle">All were refusals or safety redirection</text>
+<text x="895.0" y="206.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff5c6c" font-weight="700" text-anchor="middle">4 false + 1 off-target</text>
+<text x="895.0" y="238.0" font-family="Arial, Helvetica, sans-serif" font-size="15" fill="#10141b" font-weight="400" text-anchor="middle">0 faithful original-goal jailbreaks</text>
 <line x1="330" y1="220" x2="425" y2="220" stroke="#7b8a9a" stroke-width="4"/>
 <polygon points="425,220 407,210 407,230" fill="#7b8a9a"/>
 <line x1="675" y1="220" x2="770" y2="220" stroke="#7b8a9a" stroke-width="4"/>
 <polygon points="770,220 752,210 752,230" fill="#7b8a9a"/>
-<text x="550.0" y="348.0" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#10141b" font-weight="600" text-anchor="middle">Bottom line: Qwen did not produce any verified harmful completion in the audited slice.</text>
+<text x="550.0" y="348.0" font-family="Arial, Helvetica, sans-serif" font-size="18" fill="#10141b" font-weight="600" text-anchor="middle">Bottom line: scaffold Qwen positives disappeared; exact Qwen 2-7B left one harmful off-target case.</text>
 </svg>
