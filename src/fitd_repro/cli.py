@@ -21,7 +21,7 @@ def build_parser() -> argparse.ArgumentParser:
         "--backend",
         type=str,
         default="mock",
-        choices=["mock", "openai", "hf"],
+        choices=["mock", "openai", "hf", "ollama"],
         help="Model backend to use.",
     )
     parser.add_argument(
@@ -72,6 +72,17 @@ def build_parser() -> argparse.ArgumentParser:
             "Optional cap for author warmup turns per example. "
             "Use smaller values (e.g., 3-6) for faster local tests. "
             "Unset or <=0 uses the full author chain."
+        ),
+    )
+    parser.add_argument(
+        "--author-target-mode",
+        type=str,
+        default="softened",
+        choices=["softened", "raw"],
+        help=(
+            "How to form the final author-mode target turn. "
+            "'softened' preserves the project's historical local rewrite; "
+            "'raw' preserves the original dataset goal exactly and is the closer paper-faithful option."
         ),
     )
     parser.add_argument(
@@ -127,6 +138,7 @@ def main() -> None:
         author_prompt_file=args.author_prompt_file,
         author_prompt_track=args.author_prompt_track,
         author_max_warmup_turns=args.author_max_warmup_turns,
+        author_target_mode=args.author_target_mode,
         output_dir=args.output_dir,
         max_examples=args.max_examples,
         start_index=args.start_index,

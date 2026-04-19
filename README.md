@@ -5,7 +5,7 @@ Reproduction project for EMNLP 2025 paper:
 
 This repository is now set up to run:
 1. Phase 1 API baseline (`gpt-4o-mini` by default)
-2. Phase 2 local replication (Llama-style local model via Hugging Face)
+2. Phase 2 local replication (Llama-style local model via Hugging Face or Ollama)
 3. Extension experiment with a vigilant system prompt defense
 
 ## Assignment Alignment
@@ -78,6 +78,11 @@ bash scripts/run_phase1_api_baseline.sh
 bash scripts/run_phase2_local_llama3.sh
 ```
 
+Optional local Ollama path for an already-registered Llama model:
+```bash
+bash scripts/run_phase2_local_llama3_ollama.sh
+```
+
 If you do not want to install editable packages, run with:
 ```bash
 PYTHONPATH=src python -m fitd_repro ...
@@ -139,24 +144,33 @@ Run author prompt-technique mode (pre-generated chains from official repo data):
 python -m fitd_repro \
   --dataset-path data/author_fitd/jailbreakbench.csv \
   --backend hf \
-  --model Qwen/Qwen2.5-3B-Instruct \
+  --model Qwen/Qwen2-7B-Instruct \
   --attack fitd \
   --fitd-variant author \
   --author-prompt-track prompts1 \
-  --author-max-warmup-turns 4 \
-  --max-examples 20 \
+  --author-target-mode raw \
+  --max-examples 10 \
   --output-dir results/author_fitd_prompts1
 ```
 If your dataset name is not `jailbreakbench` or `harmbench`, provide:
 `--author-prompt-file data/author_fitd/prompt_jailbreakbench.json`
-Set `--author-max-warmup-turns 0` to use the full author chain.
+Set `--author-max-warmup-turns 0` to use the full author chain, or omit the flag to use the full copied chain by default.
+
+For partner handoff on an NVIDIA GPU, use the prepared runbook and matrix script:
+
+- [docs/partner_gpu_handoff_brief.md](./docs/partner_gpu_handoff_brief.md)
+- [docs/gpu_handoff_runbook.md](./docs/gpu_handoff_runbook.md)
+- `bash scripts/run_qwen_gpu_author_matrix.sh`
+
+Practical note: the exact `Qwen/Qwen2-7B-Instruct` follow-up is much heavier than the earlier `Qwen/Qwen2.5-3B-Instruct` substitute. On this project machine it ran through the local Hugging Face backend on CPU, not vLLM or Apple GPU.
 
 ## Safety Notes
 
 1. Default recommendation: use local `hf` or `mock` backends for FITD experiments.
-2. OpenAI backend is intentionally disabled unless `FITD_ALLOW_OPENAI=1` is set.
-3. If your course requires API comparisons, keep prompts policy-compliant and document instructor approval.
-4. `fitd-variant author` reuses official pre-generated multi-turn prompt chains; this is prompt-technique parity, not the full adaptive pipeline in `FITD.py`.
+2. Local `ollama` backend is also supported if you already have a compatible model registered in Ollama.
+3. OpenAI backend is intentionally disabled unless `FITD_ALLOW_OPENAI=1` is set.
+4. If your course requires API comparisons, keep prompts policy-compliant and document instructor approval.
+5. `fitd-variant author` reuses official pre-generated multi-turn prompt chains; this is prompt-technique parity, not the full adaptive pipeline in `FITD.py`.
 
 ## Repository Layout
 

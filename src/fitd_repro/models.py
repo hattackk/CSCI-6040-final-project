@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import os
+import json
+from urllib import error, request
 from abc import ABC, abstractmethod
 
 from .types import Message
@@ -102,12 +104,32 @@ class HFChatModel(ChatModel):
         if self._tokenizer.pad_token is None:
             self._tokenizer.pad_token = self._tokenizer.eos_token
 
-        dtype = torch.float16 if torch.cuda.is_available() else torch.float32
-        self._model = AutoModelForCausalLM.from_pretrained(
-            model_name,
-            dtype=dtype,
-            device_map="auto",
-        )
+        load_kwargs: dict[str, object] = {
+            "torch_dtype": torch.float32,
+        }
+        target_device = "cpu"
+        accelerate_available = True
+        try:
+            import accelerate  # noqa: F401
+        except ImportError:
+            accelerate_available = False
+
+        if torch.cuda.is_available():
+            load_kwargs["torch_dtype"] = torch.float16
+            target_device = "cuda"
+        elif torch.backends.mps.is_available():
+            # Some ops still fall back to CPU on Apple Silicon.
+            os.environ.setdefault("PYTORCH_ENABLE_MPS_FALLBACK", "1")
+            load_kwargs["torch_dtype"] = torch.float16
+            target_device = "mps"
+
+        if accelerate_available:
+            load_kwargs["low_cpu_mem_usage"] = True
+            load_kwargs["device_map"] = "auto" if target_device == "cuda" else target_device
+
+        self._model = AutoModelForCausalLM.from_pretrained(model_name, **load_kwargs)
+        if not accelerate_available and target_device != "cpu":
+            self._model.to(target_device)
         self._device = next(self._model.parameters()).device
 
     def _messages_to_prompt(self, messages: list[Message]) -> str:
@@ -148,6 +170,47 @@ class HFChatModel(ChatModel):
         return self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
 
+class OllamaChatModel(ChatModel):
+    def __init__(self, model_name: str):
+        self.model_name = model_name
+        self._base_url = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+
+    def generate(self, messages: list[Message], max_tokens: int, temperature: float) -> str:
+        payload = {
+            "model": self.model_name,
+            "messages": messages,
+            "stream": False,
+            "options": {
+                "temperature": temperature,
+                "num_predict": max_tokens,
+            },
+        }
+        body = json.dumps(payload).encode("utf-8")
+        req = request.Request(
+            url=f"{self._base_url}/api/chat",
+            data=body,
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
+        try:
+            with request.urlopen(req, timeout=600) as resp:
+                result = json.loads(resp.read().decode("utf-8"))
+        except error.HTTPError as exc:
+            detail = exc.read().decode("utf-8", errors="replace")
+            raise RuntimeError(f"Ollama request failed: {detail}") from exc
+        except error.URLError as exc:
+            raise RuntimeError(
+                f"Could not reach Ollama at {self._base_url}. "
+                "Start the Ollama app/server or set OLLAMA_HOST."
+            ) from exc
+
+        message = result.get("message", {})
+        content = message.get("content")
+        if content is None:
+            return ""
+        return str(content).strip()
+
+
 def build_model(backend: str, model_name: str) -> ChatModel:
     backend = backend.lower().strip()
     if backend == "mock":
@@ -156,4 +219,6 @@ def build_model(backend: str, model_name: str) -> ChatModel:
         return OpenAIChatModel(model_name=model_name)
     if backend == "hf":
         return HFChatModel(model_name=model_name)
-    raise ValueError(f"Unknown backend '{backend}'. Use one of: mock, openai, hf.")
+    if backend == "ollama":
+        return OllamaChatModel(model_name=model_name)
+    raise ValueError(f"Unknown backend '{backend}'. Use one of: mock, openai, hf, ollama.")

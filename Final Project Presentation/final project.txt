@@ -1,0 +1,38 @@
+CSCI/DASC 6040: Computational Analysis of Natural Languages
+Spring 2026
+Final project
+For this assignment you can work in teams of two to three students. The project for this course is designed
+to give you an opportunity (1) to engage with the current state of NLP research and (2) to contribute useful
+knowledge to members of that community. Specifically, your team will choose one paper from the most
+recent NLP conference, EMNLP 2025 (1,810 papers)[https://2025.emnlp.org/program/main_papers/], and attempt to reproduce its experiments. In some
+cases, this may be a straightforward task. In some cases, it may be impossible, for a range of reasons. Your
+project will do one of the following:
+• Reproduce the main experiments in the chosen paper. Your report will assess the ease of reproducibility,
+with respect to the checklist provided below. In addition, you should attempt at least one additional
+experiment that isn’t in the paper, but that you are able to conduct after having successfully reproduced
+the main results. For example, you could assess the sensitivity of the model to one or more hyper-
+parameters or to the amount of training data, or measure the variance of the evaluation score due to
+randomness in initial parameters.
+• Report on your failed attempt to reproduce your chosen paper’s main experiments. Not all papers are
+easily reproducible. Failing to reproduce the exact results of the original paper is not necessarily a
+bad thing, as long as your experiments are rigorous. Your report should identify all the questions that
+would need to be answered to reproduce the experiments, or discuss how the findings appear to be in
+error (if that is what you discover).
+Both outcomes are acceptable and can earn full credit. Some considerations in choosing a paper to
+reproduce:
+• You should find the problem tackled in the paper interesting.
+• You should be able to access the data you will need to reproduce the paper’s experiments.
+• In many cases, the authors may have made code available; this may be a blessing or a curse. You
+should definitely peruse a paper’s codebase before deciding on that paper.
+• You should estimate the computational requirements for reproducing the paper and take into account
+the resources available to you for the project. Some authors will have had access to infrastructure that
+is way out of your budget; don’t choose such a paper.
+In your proposal presentation you should briefly describe:
+• The paper whose experiments you plan to reproduce.
+• The hypotheses in the paper you plan to versify from reproducing the experiments.
+• A short description of whether and how you can access the data used in the paper.
+• Whether you will use the existing code (in that case, a link to the code) or implement yourself.
+In your final presentation you should create a 15 minutes presentation, following Simon Peyton Jones’s
+advice on How to Give a Good Research Talk. In addition, you should emphasize if you’re able to reproduce
+the results or not, along with the corresponding details (see above).
+1

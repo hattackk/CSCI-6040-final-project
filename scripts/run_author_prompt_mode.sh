@@ -10,6 +10,7 @@ BACKEND="${BACKEND:-hf}"
 AUTHOR_PROMPT_TRACK="${AUTHOR_PROMPT_TRACK:-prompts1}"
 AUTHOR_PROMPT_FILE="${AUTHOR_PROMPT_FILE:-}"
 AUTHOR_MAX_WARMUP_TURNS="${AUTHOR_MAX_WARMUP_TURNS:-4}"
+AUTHOR_TARGET_MODE="${AUTHOR_TARGET_MODE:-softened}"
 MAX_EXAMPLES="${MAX_EXAMPLES:-20}"
 
 if [[ ! -f "${DATASET_PATH}" ]]; then
@@ -46,6 +47,7 @@ CMD=(
   --fitd-variant author
   --author-prompt-track "${AUTHOR_PROMPT_TRACK}"
   --author-max-warmup-turns "${AUTHOR_MAX_WARMUP_TURNS}"
+  --author-target-mode "${AUTHOR_TARGET_MODE}"
   --max-examples "${MAX_EXAMPLES}"
   --output-dir "results/${STAMP}_author_fitd_${AUTHOR_PROMPT_TRACK}"
 )
