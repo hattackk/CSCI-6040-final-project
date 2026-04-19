@@ -20,5 +20,8 @@ local = [
   "accelerate>=0.33.0",
 ]
 
+[project.scripts]
+fitd-rescore = "fitd_repro.rescore:main"
+
 [tool.setuptools.packages.find]
 where = ["src"]

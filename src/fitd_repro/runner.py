@@ -5,12 +5,24 @@ import time
 from collections.abc import Callable
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal
 
+from .assistant import (
+    AssistantModel,
+    assistant_deviation_note,
+    assistant_paper_faithful,
+    assistant_prompts_source,
+    build_assistant,
+)
 from .attacks import AttackType, AuthorPromptTrack, AuthorTargetMode, DefenseType, FitdVariant, build_attack, resolve_author_prompt_file
 from .dataset import load_examples
 from .evaluation import evaluate_response, summarize_records
+from .judge import Judge, build_judge, judge_deviation_note, judge_paper_faithful
 from .models import build_model
 from .types import Message, PromptExample
+
+
+JudgeScope = Literal["final", "all-turns"]
 
 try:
     from tqdm import tqdm
@@ -54,24 +66,36 @@ def _log_turn_event(
     turn_index: int,
     user_prompt: str,
     assistant_response: str,
+    *,
+    judge: Judge | None = None,
+    score_harmfulness: bool = False,
 ) -> None:
-    evaluation = evaluate_response(assistant_response)
-    _append_jsonl(
-        events_path,
-        {
-            "timestamp_utc": _utc_now_iso(),
-            "example_id": example.example_id,
-            "goal": example.goal,
-            "attack": attack_name,
-            "defense": defense_name,
-            "turn_kind": turn_kind,
-            "turn_index": turn_index,
-            "user_prompt": user_prompt,
-            "assistant_response": assistant_response,
-            "assistant_refusal": evaluation["refusal"],
-            "assistant_success_heuristic": evaluation["success"],
-        },
+    evaluation = evaluate_response(
+        assistant_response,
+        goal=example.goal if judge is not None else None,
+        judge=judge,
+        score_harmfulness=score_harmfulness,
     )
+    event: dict = {
+        "timestamp_utc": _utc_now_iso(),
+        "example_id": example.example_id,
+        "goal": example.goal,
+        "attack": attack_name,
+        "defense": defense_name,
+        "turn_kind": turn_kind,
+        "turn_index": turn_index,
+        "user_prompt": user_prompt,
+        "assistant_response": assistant_response,
+        "assistant_refusal": evaluation["refusal"],
+        # Keep historical key name (heuristic) but also expose the new
+        # judge-backed label alongside it when a judge ran.
+        "assistant_success_heuristic": evaluation.get("success_heuristic", evaluation["success"]),
+    }
+    if "judge_label" in evaluation:
+        event["judge_label"] = evaluation["judge_label"]
+    if "judge_harm" in evaluation:
+        event["judge_harm"] = evaluation["judge_harm"]
+    _append_jsonl(events_path, event)
 
 
 def _run_single_example(
@@ -88,9 +112,15 @@ def _run_single_example(
     temperature: float,
     sleep_seconds: float,
     author_target_mode: AuthorTargetMode = "softened",
+    judge: Judge | None = None,
+    score_harmfulness: bool = False,
+    assistant: AssistantModel | None = None,
     turn_start_logger: Callable[[str, int, str], None] | None = None,
     turn_logger: Callable[[str, int, str, str], None] | None = None,
 ) -> dict:
+    # The `assistant` kwarg is threaded through for P1 but not yet consumed
+    # inside the warmup/final loop — P2 switches the FITD branch to call it.
+    del assistant  # noqa: F841 — reserved for P2 wiring
     attack = build_attack(
         goal=example.goal,
         attack=attack_name,
@@ -144,7 +174,12 @@ def _run_single_example(
     if sleep_seconds > 0:
         time.sleep(sleep_seconds)
 
-    evaluation = evaluate_response(final_response)
+    evaluation = evaluate_response(
+        final_response,
+        goal=example.goal if judge is not None else None,
+        judge=judge,
+        score_harmfulness=score_harmfulness,
+    )
     return {
         "example_id": example.example_id,
         "goal": example.goal,
@@ -175,6 +210,12 @@ def run_experiment(
     temperature: float,
     sleep_seconds: float,
     author_target_mode: AuthorTargetMode = "softened",
+    judge_backend: str = "mock",
+    judge_model: str | None = None,
+    judge_scope: JudgeScope = "final",
+    score_harmfulness: bool = False,
+    assistant_backend: str = "mock",
+    assistant_model: str | None = None,
     event_callback: Callable[[dict], None] | None = None,
 ) -> dict:
     out_dir = Path(output_dir)
@@ -217,7 +258,11 @@ def run_experiment(
             "model": model_name,
         },
     )
-    model = build_model(backend=backend, model_name=model_name)
+    model = build_model(backend=backend, model_name=model_name, role="target")
+    judge = build_judge(backend=judge_backend, model_name=judge_model, role="judge")
+    assistant = build_assistant(
+        backend=assistant_backend, model_name=assistant_model, role="assistant"
+    )
     _emit_event(
         event_callback,
         {
@@ -254,6 +299,8 @@ def run_experiment(
                 },
             )
 
+            per_turn_judge = judge if judge_scope == "all-turns" else None
+
             def turn_logger(kind: str, idx: int, user_prompt: str, assistant_response: str) -> None:
                 _log_turn_event(
                     events_path=events_path,
@@ -264,6 +311,8 @@ def run_experiment(
                     turn_index=idx,
                     user_prompt=user_prompt,
                     assistant_response=assistant_response,
+                    judge=per_turn_judge,
+                    score_harmfulness=score_harmfulness if per_turn_judge else False,
                 )
                 evaluation = evaluate_response(assistant_response)
                 _emit_event(
@@ -312,6 +361,9 @@ def run_experiment(
                 max_tokens=max_tokens,
                 temperature=temperature,
                 sleep_seconds=sleep_seconds,
+                judge=judge,
+                score_harmfulness=score_harmfulness,
+                assistant=assistant,
                 turn_start_logger=turn_start_logger,
                 turn_logger=turn_logger,
             )
@@ -390,6 +442,21 @@ def run_experiment(
             "records_path": str(records_path),
             "errors_path": str(errors_path),
             "turn_events_path": str(events_path),
+            "judge_backend": judge_backend,
+            "judge_model": judge_model,
+            "judge_scope": judge_scope,
+            "judge_paper_faithful": judge_paper_faithful(judge_backend, judge_model),
+            "judge_deviation": judge_deviation_note(judge_backend, judge_model),
+            "score_harmfulness": score_harmfulness,
+            "assistant_backend": assistant_backend,
+            "assistant_model": assistant_model,
+            "assistant_paper_faithful": assistant_paper_faithful(
+                assistant_backend, assistant_model
+            ),
+            "assistant_deviation": assistant_deviation_note(
+                assistant_backend, assistant_model
+            ),
+            "assistant_prompts_source": assistant_prompts_source(),
         }
     )
 

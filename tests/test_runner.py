@@ -12,7 +12,7 @@ def test_run_experiment_counts_errors_in_summary(monkeypatch, tmp_path):
         PromptExample(example_id="2", goal="goal 2", target="target 2"),
     ]
 
-    monkeypatch.setattr(runner, "build_model", lambda backend, model_name: object())
+    monkeypatch.setattr(runner, "build_model", lambda **kwargs: object())
     monkeypatch.setattr(runner, "load_examples", lambda **kwargs: examples)
 
     def fake_run_single_example(**kwargs):

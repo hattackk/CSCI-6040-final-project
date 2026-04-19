@@ -224,8 +224,60 @@ Dashboard runs also write:
 
 ## Notes on Metrics
 
-Current scoring uses a refusal-phrase heuristic for fast iteration.
-For final report quality, you should add a stronger judge (manual annotation or LLM judge) and report both heuristic and verified ASR.
+Scoring now layers the paper's JailbreakBench-style judge (§A.3.3) on top of
+the refusal-phrase heuristic. `summary.json` reports both `asr` (judge-backed
+when the judge ran) and `judge_asr`, plus `success_heuristic` per record so
+the older signal remains auditable.
+
+### Judge model (§A.3.3 / §A.3.6)
+
+The judge is backend-agnostic: it just needs a chat model. The paper's default
+is `gpt-4o`, so the paper-faithful invocation is:
+
+```bash
+python -m fitd_repro \
+  --backend vllm --model meta-llama/Meta-Llama-3-8B-Instruct \
+  --judge-backend openai --judge-model gpt-4o \
+  --dataset-path data/advbench/harmful_behaviors.csv \
+  --output-dir results/run_paper_faithful
+```
+
+If you do not want to hit OpenAI, omit `--judge-backend openai` and the judge
+falls back to the target model (re-using one vLLM container). That is a
+deviation from the paper and gets recorded in
+`summary.json` as `judge_paper_faithful: false` with a `judge_deviation` note.
+Opt into per-turn harmfulness (§A.3.6, score 1-5) with `--score-harmfulness`;
+opt into judging every warmup turn (13x more judge calls on a 12-turn run)
+with `--judge-scope all-turns`.
+
+To retro-score an existing run directory against the §A.3.3 judge without
+re-running the target model:
+
+```bash
+python -m fitd_repro.rescore results/run_my_old_run \
+  --judge-backend openai --judge-model gpt-4o
+```
+
+The command is idempotent and writes back into the same `records.jsonl` /
+`summary.json`.
+
+### Assistant model M (§A.3.4 / §A.3.5)
+
+The paper factors the attack into a *target* `T` and an *assistant* `M`.
+`M` is called for SlipperySlopeParaphrase (§A.3.4), Re-Align (§A.3.5), and a
+few helpers. The paper uses `gpt-4o-mini` for `M`:
+
+```bash
+python -m fitd_repro \
+  --backend vllm --model meta-llama/Meta-Llama-3-8B-Instruct \
+  --assistant-backend openai --assistant-model gpt-4o-mini \
+  ...
+```
+
+As with the judge, omitting `--assistant-backend` re-uses the target (logged
+as a deviation). `summary.json` records which helper prompts are paper-exact
+vs. derived under `assistant_prompts_source`. P1 lands the seam; the FITD
+runner branch does not consume `M` yet (P2 task).
 
 ## Team Workflow Suggestion
 
