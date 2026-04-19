@@ -83,6 +83,32 @@ Optional local Ollama path for an already-registered Llama model:
 bash scripts/run_phase2_local_llama3_ollama.sh
 ```
 
+Optional vLLM path (Docker + NVIDIA GPU; paper-faithful serving):
+```bash
+cp .env.vllm.example .env           # fill in HF_TOKEN, VLLM_MODEL, VLLM_API_KEY
+docker compose up -d vllm           # wait for the weights to load
+export VLLM_API_KEY=local-dev-key   # or whatever you set in .env
+bash scripts/run_phase2_vllm_llama3.sh
+```
+The vLLM service listens on `http://localhost:8001/v1` (OpenAI-compatible) and
+is selected with `--backend vllm`. Override with `VLLM_BASE_URL` if running the
+container on another host.
+
+To swap the served model (one model per container at a time, weights cached):
+```bash
+bash scripts/vllm_switch_model.sh Qwen/Qwen2-7B-Instruct
+```
+
+Run the full matrix (standard / fitd / fitd+vigilant) over multiple models in
+one command. Each model is loaded in turn, polled for readiness, then swept:
+```bash
+bash scripts/run_vllm_model_matrix.sh
+# or with an explicit list:
+bash scripts/run_vllm_model_matrix.sh Qwen/Qwen2-7B-Instruct Qwen/Qwen1.5-7B-Chat
+```
+Per-run outputs land under `results/<stamp>_vllm_*` and a manifest of every
+run is written to `results/<stamp>_vllm_matrix/manifest.md`.
+
 If you do not want to install editable packages, run with:
 ```bash
 PYTHONPATH=src python -m fitd_repro ...

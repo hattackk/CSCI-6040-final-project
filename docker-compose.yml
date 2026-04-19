@@ -1,0 +1,87 @@
+services:
+  vllm:
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - NVIDIA_VISIBLE_DEVICES=${VLLM_CUDA_DEVICE:-0}
+      - CUDA_VISIBLE_DEVICES=${VLLM_CUDA_DEVICE:-0}
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ports:
+      - "${VLLM_HOST_PORT:-8001}:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ipc: host
+    command: >
+      --model ${VLLM_MODEL}
+      --dtype half
+      --api-key ${VLLM_API_KEY}
+      --gpu-memory-utilization ${VLLM_GPU_MEM_UTIL:-0.85}
+      --max-model-len ${VLLM_MAX_MODEL_LEN:-4768}
+
+  # Optional second container serving a dedicated judge model.
+  # Bring up with:  docker compose --profile judge up -d vllm vllm-judge
+  vllm-judge:
+    profiles: ["judge"]
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - NVIDIA_VISIBLE_DEVICES=${VLLM_JUDGE_CUDA_DEVICE:-1}
+      - CUDA_VISIBLE_DEVICES=${VLLM_JUDGE_CUDA_DEVICE:-1}
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ports:
+      - "${VLLM_JUDGE_HOST_PORT:-8002}:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ipc: host
+    command: >
+      --model ${VLLM_JUDGE_MODEL:-Qwen/Qwen3.5-4B}
+      --dtype half
+      --api-key ${VLLM_JUDGE_API_KEY:-fitd-repro-judge}
+      --gpu-memory-utilization ${VLLM_JUDGE_GPU_MEM_UTIL:-0.85}
+      --max-model-len ${VLLM_JUDGE_MAX_MODEL_LEN:-4768}
+
+  # Optional third container serving the paper's assistant model M.
+  # Bring up with:  docker compose --profile assistant up -d vllm vllm-assistant
+  vllm-assistant:
+    profiles: ["assistant"]
+    image: vllm/vllm-openai:latest
+    runtime: nvidia
+    environment:
+      - HUGGING_FACE_HUB_TOKEN=${HF_TOKEN}
+      - CUDA_DEVICE_ORDER=PCI_BUS_ID
+      - NVIDIA_VISIBLE_DEVICES=${VLLM_ASSISTANT_CUDA_DEVICE:-1}
+      - CUDA_VISIBLE_DEVICES=${VLLM_ASSISTANT_CUDA_DEVICE:-1}
+    volumes:
+      - ~/.cache/huggingface:/root/.cache/huggingface
+    ports:
+      - "${VLLM_ASSISTANT_HOST_PORT:-8003}:8000"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    ipc: host
+    command: >
+      --model ${VLLM_ASSISTANT_MODEL:-Qwen/Qwen3.5-4B}
+      --dtype half
+      --api-key ${VLLM_ASSISTANT_API_KEY:-fitd-repro-assistant}
+      --gpu-memory-utilization ${VLLM_ASSISTANT_GPU_MEM_UTIL:-0.85}
+      --max-model-len ${VLLM_ASSISTANT_MAX_MODEL_LEN:-4768}

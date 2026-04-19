@@ -351,8 +351,8 @@ class DashboardState:
 
     def _normalize_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         backend = str(payload.get("backend", "mock")).strip().lower()
-        if backend not in {"mock", "openai", "hf", "ollama"}:
-            raise ValueError("backend must be one of: mock, openai, hf, ollama")
+        if backend not in {"mock", "openai", "hf", "vllm", "ollama"}:
+            raise ValueError("backend must be one of: mock, openai, hf, vllm, ollama")
         if backend == "openai" and not self.openai_backend_allowed:
             raise ValueError(
                 "OpenAI backend is disabled by default. "

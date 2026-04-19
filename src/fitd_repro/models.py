@@ -170,10 +170,96 @@ class HFChatModel(ChatModel):
         return self._tokenizer.decode(new_tokens, skip_special_tokens=True).strip()
 
 
-class OllamaChatModel(ChatModel):
-    def __init__(self, model_name: str):
+def _vllm_env_for_role(role: str) -> tuple[str, str, str]:
+    """(base_url_env, api_key_env, default_base_url) for a role.
+
+    Keeps ``target`` reading the historical ``VLLM_BASE_URL`` / ``VLLM_API_KEY``
+    pair; ``judge`` / ``assistant`` read role-prefixed variants that fall back
+    to sensible localhost ports defined by the docker-compose profiles.
+    """
+    role = (role or "target").lower().strip()
+    if role == "judge":
+        return (
+            "JUDGE_VLLM_BASE_URL",
+            "JUDGE_VLLM_API_KEY",
+            f"http://localhost:{os.environ.get('VLLM_JUDGE_HOST_PORT', '8002')}/v1",
+        )
+    if role == "assistant":
+        return (
+            "ASSISTANT_VLLM_BASE_URL",
+            "ASSISTANT_VLLM_API_KEY",
+            f"http://localhost:{os.environ.get('VLLM_ASSISTANT_HOST_PORT', '8003')}/v1",
+        )
+    return ("VLLM_BASE_URL", "VLLM_API_KEY", "http://localhost:8001/v1")
+
+
+def _ollama_env_for_role(role: str) -> tuple[str, str]:
+    role = (role or "target").lower().strip()
+    if role == "judge":
+        return ("JUDGE_OLLAMA_HOST", "http://127.0.0.1:11434")
+    if role == "assistant":
+        return ("ASSISTANT_OLLAMA_HOST", "http://127.0.0.1:11434")
+    return ("OLLAMA_HOST", "http://127.0.0.1:11434")
+
+
+class VLLMChatModel(ChatModel):
+    """OpenAI-compatible vLLM server backend (see docker-compose.yml `vllm` service)."""
+
+    def __init__(
+        self,
+        model_name: str,
+        *,
+        role: str = "target",
+        base_url: str | None = None,
+        api_key: str | None = None,
+    ):
+        try:
+            from openai import OpenAI
+        except ImportError as exc:
+            raise RuntimeError(
+                "Missing dependency: openai. Install with `pip install -e .`"
+            ) from exc
+
+        base_url_env, api_key_env, default_base_url = _vllm_env_for_role(role)
+        resolved_base_url = (
+            base_url
+            or os.environ.get(base_url_env)
+            or os.environ.get("VLLM_BASE_URL", default_base_url)
+        )
+        resolved_api_key = (
+            api_key
+            or os.environ.get(api_key_env)
+            or os.environ.get("VLLM_API_KEY", "EMPTY")
+        )
+
         self.model_name = model_name
-        self._base_url = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434").rstrip("/")
+        self.role = role
+        self._client = OpenAI(base_url=resolved_base_url, api_key=resolved_api_key)
+
+    def generate(self, messages: list[Message], max_tokens: int, temperature: float) -> str:
+        response = self._client.chat.completions.create(
+            model=self.model_name,
+            messages=messages,
+            max_tokens=max_tokens,
+            temperature=temperature,
+        )
+        content = response.choices[0].message.content
+        if content is None:
+            return ""
+        return content.strip()
+
+
+class OllamaChatModel(ChatModel):
+    def __init__(self, model_name: str, *, role: str = "target", host: str | None = None):
+        self.model_name = model_name
+        self.role = role
+        host_env, default_host = _ollama_env_for_role(role)
+        resolved_host = (
+            host
+            or os.environ.get(host_env)
+            or os.environ.get("OLLAMA_HOST", default_host)
+        )
+        self._base_url = resolved_host.rstrip("/")
 
     def generate(self, messages: list[Message], max_tokens: int, temperature: float) -> str:
         payload = {
@@ -211,7 +297,8 @@ class OllamaChatModel(ChatModel):
         return str(content).strip()
 
 
-def build_model(backend: str, model_name: str) -> ChatModel:
+def build_model(backend: str, model_name: str, *, role: str = "target") -> ChatModel:
+    """Construct a `ChatModel`. ``role`` routes env-var lookups for vLLM/Ollama."""
     backend = backend.lower().strip()
     if backend == "mock":
         return MockChatModel()
@@ -219,6 +306,8 @@ def build_model(backend: str, model_name: str) -> ChatModel:
         return OpenAIChatModel(model_name=model_name)
     if backend == "hf":
         return HFChatModel(model_name=model_name)
+    if backend == "vllm":
+        return VLLMChatModel(model_name=model_name, role=role)
     if backend == "ollama":
-        return OllamaChatModel(model_name=model_name)
-    raise ValueError(f"Unknown backend '{backend}'. Use one of: mock, openai, hf, ollama.")
+        return OllamaChatModel(model_name=model_name, role=role)
+    raise ValueError(f"Unknown backend '{backend}'. Use one of: mock, openai, hf, vllm, ollama.")

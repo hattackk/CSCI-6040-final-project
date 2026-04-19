@@ -6,6 +6,9 @@ import json
 from .runner import run_experiment
 
 
+_BACKEND_CHOICES = ["mock", "openai", "hf", "vllm", "ollama"]
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         prog="fitd_repro",
@@ -21,8 +24,8 @@ def build_parser() -> argparse.ArgumentParser:
         "--backend",
         type=str,
         default="mock",
-        choices=["mock", "openai", "hf", "ollama"],
-        help="Model backend to use.",
+        choices=_BACKEND_CHOICES,
+        help="Model backend to use for the target (T).",
     )
     parser.add_argument(
         "--model",

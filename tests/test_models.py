@@ -5,7 +5,7 @@ import types
 
 import pytest
 
-from fitd_repro.models import HFChatModel, build_model
+from fitd_repro.models import HFChatModel, VLLMChatModel, build_model
 
 
 def test_openai_model_requires_explicit_opt_in(monkeypatch):
@@ -13,6 +13,63 @@ def test_openai_model_requires_explicit_opt_in(monkeypatch):
 
     with pytest.raises(RuntimeError, match="disabled by default"):
         build_model(backend="openai", model_name="gpt-4o-mini")
+
+
+def test_vllm_model_reads_base_url_and_api_key_from_env(monkeypatch):
+    monkeypatch.setenv("VLLM_BASE_URL", "http://test-host:9000/v1")
+    monkeypatch.setenv("VLLM_API_KEY", "test-key")
+
+    captured: dict[str, object] = {}
+
+    class _FakeOpenAI:
+        def __init__(self, base_url: str, api_key: str):
+            captured["base_url"] = base_url
+            captured["api_key"] = api_key
+
+    fake_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    model = VLLMChatModel(model_name="meta-llama/Meta-Llama-3-8B-Instruct")
+
+    assert captured["base_url"] == "http://test-host:9000/v1"
+    assert captured["api_key"] == "test-key"
+    assert model.model_name == "meta-llama/Meta-Llama-3-8B-Instruct"
+
+
+def test_vllm_model_defaults_to_localhost_when_env_unset(monkeypatch):
+    monkeypatch.delenv("VLLM_BASE_URL", raising=False)
+    monkeypatch.delenv("VLLM_API_KEY", raising=False)
+
+    captured: dict[str, object] = {}
+
+    class _FakeOpenAI:
+        def __init__(self, base_url: str, api_key: str):
+            captured["base_url"] = base_url
+            captured["api_key"] = api_key
+
+    fake_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    VLLMChatModel(model_name="local-model")
+
+    assert captured["base_url"] == "http://localhost:8001/v1"
+    assert captured["api_key"] == "EMPTY"
+
+
+def test_build_model_routes_vllm_backend(monkeypatch):
+    monkeypatch.setenv("VLLM_BASE_URL", "http://localhost:8001/v1")
+    monkeypatch.setenv("VLLM_API_KEY", "key")
+
+    class _FakeOpenAI:
+        def __init__(self, base_url: str, api_key: str):
+            pass
+
+    fake_module = types.SimpleNamespace(OpenAI=_FakeOpenAI)
+    monkeypatch.setitem(sys.modules, "openai", fake_module)
+
+    model = build_model(backend="vllm", model_name="some-model")
+
+    assert isinstance(model, VLLMChatModel)
 
 
 class _FakeTokenizer:
