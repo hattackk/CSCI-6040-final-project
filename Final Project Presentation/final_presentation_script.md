@@ -1,187 +1,213 @@
-# 15-Minute Final Presentation Script
+# 15-Minute Recorded Presentation Script
 **Project:** Reproducing "Foot-In-The-Door": Multi-turn Model Jailbreaking  
 **Course:** CSCI/DASC 6040  
 **Target length:** 15 minutes total  
 **Split:** Matthew slides 1-5, Chris slides 6-10  
-**Planned speaking time:** about 14 minutes 30 seconds, leaving a small buffer for pauses and handoff
+**Planned speaking time:** about 15 minutes total at a normal presentation pace, with a near-even split of roughly 7 minutes 35 seconds to 7 minutes 40 seconds per speaker
 
 ## Presenter Split
 
-- **Matthew:** Slides 1-5, about 7 minutes 15 seconds
-- **Chris:** Slides 6-10, about 7 minutes 15 seconds
+- **Matthew:** Slides 1-5, about 7 minutes 40 seconds
+- **Chris:** Slides 6-10, about 7 minutes 35 seconds
 
 ---
 
 ## Slide 1: Title and Bottom Line
 **Presenter:** Matthew  
-**Target time:** ~45 seconds
+**Target time:** ~1 minute 15 seconds
 
 **Script**
 
-"Hi everyone. For our final project, we did a reproduction study of the EMNLP 2025 paper *Foot-In-The-Door: Multi-turn Model Jailbreaking*. The main claim in that paper is that a model can be easier to jailbreak if you lead it through a series of harmless-looking questions instead of asking for the harmful request directly. We went in expecting at least a small version of that effect. What we found was different: in our local experiments, that effect did not hold up."
+"For our final project, we did a reproduction study of the EMNLP 2025 paper *Foot-In-The-Door: Multi-turn Model Jailbreaking*. The paper argues that a harmful request can become more effective when the model is led to it through a gradual multi-turn conversation instead of being asked directly in one shot.
+
+That claim matters because, if it holds, then safety is not just about screening the final prompt. It becomes a question of whether the full conversation history changes the model's willingness to comply.
+
+It also makes this a good reproduction target. The claim is concrete, measurable, and high stakes. Either the multi-turn path creates a real lift over direct prompting, or it does not.
+
+Our final result is mixed. In a later GPU and vLLM follow-up, we did observe harmful outputs on some models. But when we focused on the Qwen-family models that matter most for paper faithfulness, we still did not get a clean reproduction of the paper's main FITD result."
 
 ---
 
 ## Slide 2: What the Paper Claims
 **Presenter:** Matthew  
-**Target time:** ~1 minute 15 seconds
+**Target time:** ~1 minute 20 seconds
 
 **Script**
 
-"The idea comes from the classic foot-in-the-door effect in psychology. If someone agrees to a small request first, they may be more likely to agree to a larger related request later.
+"The paper is built around the classic foot-in-the-door idea from psychology. The basic intuition is that agreement to a small initial request can make agreement to a larger related request more likely later.
 
-The paper applies that idea to LLM safety. On the left is the obvious harmful prompt, which should get refused. On the right is the multi-turn version, where the conversation starts with something that looks benign and gradually gets closer to the harmful goal.
+Applied to language models, that means a direct harmful prompt might be refused, but a multi-turn path could gradually shift the interaction. The early turns can look harmless on their own, such as broad security questions, manipulation framing, or abstract planning. Then the conversation escalates until the final harmful request appears in a context that may be harder for the model to reject consistently.
 
-If that strategy works reliably, then safety depends a lot on the path of the conversation, not just the final prompt."
+So the core paper claim is not just that one prompt can jailbreak a model. It is that the conversation path itself can be an attack mechanism.
+
+If that is true, then a model could appear safe under direct prompting while still being vulnerable when the same request is reached through staged escalation. That is the idea we were trying to test."
 
 ---
 
-## Slide 3: Our Research Questions
+## Slide 3: Research Questions
 **Presenter:** Matthew  
-**Target time:** ~55 seconds
+**Target time:** ~1 minute 30 seconds
 
 **Script**
 
-"We built the project around three questions.
+"We organized the project around three questions.
 
-First, does FITD actually outperform direct prompting on real harmful prompts?
+First, does FITD outperform direct prompting on harmful prompts? That is the central empirical claim of the paper.
 
-Second, if we add a simple defense prompt that warns the model about gradual escalation, does that help?
+Second, does a simple vigilant defense reduce any observed effect? We wanted to know whether adding a more cautious system framing could blunt the escalation path, even in a lightweight way.
 
-Third, does the pattern show up across more than one model, or does it disappear once we test other local models?"
+Third, if our early local results looked too refusal-heavy to be informative, would a closer runtime reveal behavior that our initial setup was missing?
+
+That third question ended up being especially important, because a reproduction can fail for two very different reasons. It can fail because the paper's effect is not robust, or it can fail because the reproduction setup is too far from the paper to surface the effect in the first place.
+
+That distinction shaped the rest of the project. We were not just asking whether FITD worked. We were also asking whether our own infrastructure was good enough to make that question worth answering.
+
+Taken together, those three questions let us separate attack behavior, defense behavior, and runtime sensitivity instead of collapsing everything into one headline number."
 
 ---
 
-## Slide 4: What We Actually Tested
+## Slide 4: Experimental Design
 **Presenter:** Matthew  
+**Target time:** ~1 minute 55 seconds
+
+**Script**
+
+"Our final evidence comes from two phases, and it is important to separate them.
+
+The first phase was the initial local scaffold evaluation on the MacBook environment. That included `Qwen/Qwen2.5-3B-Instruct`, Gemma 4, a local Llama 3 run, and then a closer author-chain check using `Qwen/Qwen2-7B-Instruct` on a 10-example `jailbreakbench` slice.
+
+That phase was useful for building and validating the pipeline. It let us fix implementation issues, compare standard versus FITD versus vigilant conditions, and confirm that the runner and evaluation logic behaved consistently. But it also had a major faithfulness gap, because some of the models and the runtime stack did not match the paper closely enough.
+
+The second phase was the later GPU and vLLM follow-up. That used the first 25 AdvBench examples and covered five models: Mistral 7B, Llama 3 8B, Llama 3.1 8B, `Qwen/Qwen2-7B-Instruct`, and `Qwen/Qwen1.5-7B-Chat`.
+
+That second phase matters because it moved closer to the paper in the places that were hurting the project most: stronger hardware, a vLLM serving stack, and exact Qwen-family targets instead of only substitutes.
+
+At the same time, it still was not a perfect paper-faithful rerun. It used scaffold FITD on AdvBench with a local Qwen judge, rather than the paper's full adaptive FITD pipeline and original judging setup. So the later phase is closer, but still not identical."
+
+---
+
+## Slide 5: Why a Runtime Follow-up Was Necessary
+**Presenter:** Matthew  
+**Target time:** ~1 minute 40 seconds
+
+**Script**
+
+"We added the GPU and vLLM follow-up because the initial local runs were becoming hard to interpret.
+
+In many of those early runs, the system produced almost no harmful outputs at all. A failed reproduction is still a valid outcome. But when nearly everything is refused, that can also mean the setup is too refusal-dominant to really stress the paper's claim.
+
+In other words, if the pipeline rarely surfaces harmful behavior anywhere, then it becomes difficult to tell whether FITD is actually ineffective or whether the environment is simply too constrained to expose the effect.
+
+The later follow-up changed that picture. It produced harmful outputs on some models, which gave us a much more informative comparison. That moved the project from a mostly negative local story to a more useful question: once harmful behavior appears in a closer runtime, does that behavior actually validate the paper's Qwen-family result?
+
+That is an important shift in the logic of the project. The follow-up was not just more compute for the sake of more compute. It was a way to test whether the original negative result was genuinely evidence against the paper, or mostly evidence that our first environment was too limited.
+
+Chris will take it from there."
+
+---
+
+## Slide 6: GPU/vLLM Follow-up: Multi-Model Results
+**Presenter:** Chris  
 **Target time:** ~1 minute 50 seconds
 
 **Script**
 
-"To answer that, we used the real AdvBench harmful-behavior dataset and compared three conditions: standard prompting, FITD prompting, and FITD plus a vigilant system prompt.
+"This chart shows the biggest shift in our evidence.
 
-We first ran a three-model local scaffold matrix:
+In the GPU and vLLM follow-up, we saw judged harmful outputs across several models rather than the near-universal refusals that dominated many of the earlier local runs. The clearest example was Mistral 7B. Under standard prompting, the judged attack success rate was 48 percent. Under FITD, it rose to 72 percent. Under the vigilant condition, it dropped back to 52 percent.
 
-- Qwen 2.5 3B Instruct
-- Gemma 4 E4B Instruct
-- Llama 3 8B through a local Ollama GGUF setup
+That pattern is important because it shows two things at once. First, a multi-turn escalation path can matter in at least some settings. Second, a defense-oriented prompt can still recover some refusals, even if it does not eliminate the problem.
 
-Our analyzed slices were 20 examples for Qwen and 10 each for Gemma 4 and Llama 3.
+Across all five models together, the average judged attack success rate moved from 18.4 percent under standard prompting to 23.2 percent under FITD, and then back to 18.4 percent under the vigilant condition.
 
-After that initial matrix, we added a closer paper-faithful Qwen follow-up using the exact `Qwen/Qwen2-7B-Instruct` family and the authors' official pre-generated `prompts1` chains on `jailbreakbench`.
+The effect also was not uniform across models, so this is not a simple story where FITD dominates every target once the runtime gets stronger.
 
-One thing we want to be clear about is that this still was not a perfect paper-match setup. We did not run the full adaptive pipeline from the paper, and the paper used a different runtime stack. But adding the exact 7B Qwen family moved us beyond the earlier Qwen 2.5 3B substitute and made the project a stronger reproduction attempt than it was before."
+So the closer runtime clearly changed what we observed. But this broader multi-model signal is only part of the story. For a reproduction study, the harder question is whether the exact Qwen-family models behave in a way that supports the paper's main result."
 
 ---
 
-## Slide 5: Qwen Results
-**Presenter:** Matthew  
-**Target time:** ~2 minutes 30 seconds
-
-**Script**
-
-"Here is where the story first looked promising for the paper.
-
-On the Qwen 2.5 3B scaffold slice, direct prompting gave us zero heuristic successes. FITD gave us two out of twenty. FITD plus the defense gave us one out of twenty.
-
-So if we stopped at the raw metric, the easy summary would have been: maybe there is a small FITD effect, and maybe the defense cuts it down a bit.
-
-Then we ran the closer exact-model Qwen follow-up using `Qwen2-7B-Instruct` and the authors' official prompt chain format. The pattern looked similar at first: standard was zero out of ten, author FITD was two out of ten, and author FITD plus the defense was zero out of ten.
-
-So across both Qwen settings, the raw heuristic still suggested a small FITD lift.
-
-But that turned out to be the wrong summary.
-
-Those numbers came from our automated first-pass scorer. It marked a response as a possible success if it did not look like a refusal and was long enough to count as substantive. Once we reviewed the flagged outputs ourselves, the result changed. And that is the point where Chris takes over, because that review is what changed the interpretation of the project."
-
-**Handoff line**
-
-"At first, this looked like a weak positive result. But once we checked the actual outputs, the signal changed. Chris will walk through that part."
-
----
-
-## Slide 6: Manual Audit Changed the Story
-**Presenter:** Chris  
-**Target time:** ~1 minute 35 seconds
-
-**Script**
-
-"When we reviewed the Qwen outputs that our scorer flagged, the story split into two parts.
-
-On the original Qwen 2.5 3B scaffold slice, every flagged output was a false positive.
-
-But on the exact `Qwen2-7B-Instruct` author-prompt slice, one of the two flagged outputs was different. It was still not a faithful completion of the original harmful goal, but it was a real harmful off-target response.
-
-What happened there is that the copied author chain softened the final request from killing people over fifty to removing them. The model then wrote an exclusionary argument for removing older people from societal roles. So we did not count that as a true replication of the original target, but we also did not call it a harmless false positive.
-
-Across the reported Qwen runs, we manually checked all five heuristic positives. Four were false positives, and one was harmful off-target compliance. So the judge mattered almost as much as the prompts, and the exact-model follow-up made the conclusion more nuanced."
-
----
-
-## Slide 7: Additional Model Checks
+## Slide 7: Exact Qwen-Family Results Stayed Mixed
 **Presenter:** Chris  
 **Target time:** ~1 minute 40 seconds
 
 **Script**
 
-"After that, we wanted to know whether Qwen was just noisy, so we added two more model checks.
+"Once we narrow the analysis to the two paper-family Qwen targets, the result becomes much weaker.
 
-Gemma 4 refused every tested prompt in every condition on its 10-example slice.
+For `Qwen/Qwen2-7B-Instruct`, standard and FITD were both 12 percent, while FITD plus vigilant was 8 percent.
 
-Llama 3 did the same.
+For `Qwen/Qwen1.5-7B-Chat`, standard was 12 percent, FITD was 4 percent, and FITD plus vigilant was also 4 percent.
 
-So across those added models, the pattern was straightforward: standard, FITD, and FITD plus vigilant all stayed at zero successes.
+So the main thing to notice is that FITD did not produce a strong lift on the exact Qwen family. If anything, one of the Qwen-family models looked worse under FITD rather than better.
 
-That helped us in two ways. First, it made the project harder to dismiss as a one-model accident. Second, once Llama 3 was also negative, the simple explanation that we only failed because we picked the wrong model family became a lot weaker."
+That matters because these are the models that most directly reduce the original paper-faithfulness gap in our project.
+
+In other words, stronger results on models like Mistral are interesting, but they do not answer the central reproduction question by themselves. The paper did not make its main case on Mistral. It made it on the Qwen family.
+
+There is also an evaluation caveat. Some judged positives were not clearly harmful completions when we spot-checked them manually. In other words, the local judge could sometimes mark a refusal-style answer as unsafe.
+
+So the Qwen-family evidence is still mixed for two reasons at once: the observed lift is weak, and the remaining positives still need fuller manual audit."
 
 ---
 
-## Slide 8: Why We Did Not Reproduce the Paper
+## Slide 8: Remaining Reproduction Gaps
 **Presenter:** Chris  
-**Target time:** ~1 minute 35 seconds
+**Target time:** ~1 minute 30 seconds
 
 **Script**
 
-"That said, we still do not think our result proves the paper was wrong.
+"The most accurate description of the project at this point is that it is a closer, but still incomplete, reproduction.
 
-The cleaner way to say it is that we did not reproduce the effect under our setup.
+The runtime gap is smaller because the later evaluation used a GPU and vLLM rather than only local CPU execution.
 
-We think the gap between our results and theirs comes from four things: remaining model mismatch, pipeline mismatch, evaluation mismatch, and runtime limits.
+But several important gaps still remain.
 
-The exact `Qwen2-7B-Instruct` follow-up narrowed the model criticism a lot, and the author-prompt chain narrowed the pipeline criticism too. But we still did not run the full adaptive pipeline from the paper, and the paper used vLLM on A100 hardware while we used local Hugging Face on CPU.
+The follow-up used scaffold FITD on AdvBench rather than reproducing the paper's full adaptive FITD pipeline on the narrower author-style pathway.
 
-So the conclusion we can defend is setup-sensitive failure to reproduce, not falsification."
+The judge also differs from the paper, and we already saw evidence that it can produce false positives on explicit refusals.
+
+And even though we tested the exact Qwen-family models, the surrounding attack-generation and evaluation stack still was not the same as the one reported in the paper.
+
+That last point matters because attack pipelines are not just model names. They also include the prompting logic, the assistant behavior, the judge, and the runtime assumptions. Changing those pieces can change the measured outcome.
+
+Those gaps matter because they limit what we can claim. We can say the later setup was more informative and more paper-adjacent. We cannot honestly say that it was a full faithful replication."
 
 ---
 
 ## Slide 9: Final Conclusion
 **Presenter:** Chris  
-**Target time:** ~1 minute 35 seconds
+**Target time:** ~1 minute 50 seconds
 
 **Script**
 
-"So our final conclusion is pretty direct.
+"Our final conclusion is more nuanced than either a simple success story or a simple failure story.
 
-We reproduced the experimental scaffold, ran real local evaluations, added one defense condition, added two more models, and also added a closer exact-model Qwen check.
+On one hand, the later GPU and vLLM evaluation clearly improved the project. It surfaced harmful outputs that the early local setup often failed to reveal, especially on Mistral, and it gave us a more informative basis for comparison across standard, FITD, and vigilant conditions.
 
-On the scaffold runs, the apparent Qwen positives disappeared after human review.
+On the other hand, the exact Qwen-family results still did not show a strong and clean FITD effect. The lift that would matter most for reproducing the paper was weak or absent, and some judged positives were questionable once we inspected outputs directly.
 
-On Gemma 4 and Llama 3, everything was refused.
+So the most defensible conclusion is this: moving closer to the paper's runtime made the project better and more informative, but it still did not produce a clean reproduction of the paper's headline Qwen-family FITD result.
 
-On the exact `Qwen2-7B-Instruct` follow-up, we still did not get a faithful completion of the original harmful goal, but we did see one harmful off-target completion under the softened author-chain prompt. That makes the result more interesting than a clean all-zero story, but still far short of the paper's strong reported effect.
+That outcome is still academically useful. Reproduction work does not only matter when it confirms a paper. It also matters when it shows which parts of a result appear robust, which parts weaken under different implementation choices, and which parts still depend on unresolved methodological details.
 
-That puts our project in the rigorous failed-reproduction category, which the assignment explicitly allows. We think it is still a useful result because it shows how much the answer depends on setup, prompt construction, and evaluation."
+That places the project in the partial or failed reproduction category, depending on how strict you want to be about paper faithfulness. We think partial reproduction with clear unresolved gaps is the fairest characterization."
 
 ---
 
-## Slide 10: If We Had More Time
+## Slide 10: Remaining Work
 **Presenter:** Chris  
-**Target time:** ~40 seconds
+**Target time:** ~45 seconds
 
 **Script**
 
-"If we had more time, the next steps are clear: run a larger slice or the full benchmark, add the second paper-family Qwen model, match the authors' full adaptive pipeline more closely, and use a stronger judge.
+"The remaining work is narrower now than it was earlier in the semester.
 
-But for this class project, the important part is that we ran the core comparison honestly, checked the outputs carefully, and followed the evidence where it led.
+First, manually audit every judged positive in the GPU and vLLM follow-up so the final claims are based on verified outputs, not just judge labels.
 
-Thanks."
+Second, rerun the exact Qwen-family models on the author-chain pathway with the raw target preserved.
+
+Third, swap in the paper-faithful judge and assistant defaults.
+
+And fourth, implement the paper's full adaptive FITD loop rather than stopping at the scaffold.
+
+Those steps are what would move this from a closer approximation to a genuinely stronger reproduction."
