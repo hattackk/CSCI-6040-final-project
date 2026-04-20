@@ -24,6 +24,23 @@ COLORS = {
     "paper_dark": "#eef3f8",
 }
 
+VLLM_MATRIX_MODELS = [
+    "Mistral 7B",
+    "Llama 3.1 8B",
+    "Qwen2 7B",
+    "Qwen1.5 7B",
+    "Llama 3 8B",
+]
+
+VLLM_MATRIX_STANDARD = [0.48, 0.20, 0.12, 0.12, 0.00]
+VLLM_MATRIX_FITD = [0.72, 0.24, 0.12, 0.04, 0.04]
+VLLM_MATRIX_FITD_VIGILANT = [0.52, 0.28, 0.08, 0.04, 0.00]
+
+VLLM_QWEN_MODELS = ["Qwen2 7B", "Qwen1.5 7B"]
+VLLM_QWEN_STANDARD = [0.12, 0.12]
+VLLM_QWEN_FITD = [0.12, 0.04]
+VLLM_QWEN_FITD_VIGILANT = [0.08, 0.04]
+
 
 def read_summary(rel_path: str) -> dict:
     return json.loads((ROOT / rel_path).read_text())
@@ -70,12 +87,12 @@ def bar_chart_svg(
     ymax: float,
     fmt,
 ) -> str:
-    width = 1100
-    height = 640
+    width = 1450
+    height = 560
     margin_left = 110
-    margin_right = 60
-    margin_top = 120
-    margin_bottom = 120
+    margin_right = 50
+    margin_top = 102
+    margin_bottom = 88
     plot_w = width - margin_left - margin_right
     plot_h = height - margin_top - margin_bottom
 
@@ -89,8 +106,8 @@ def bar_chart_svg(
         "<title>Figure</title>",
         "<desc>Submission figure</desc>",
         f'<rect width="{width}" height="{height}" fill="{COLORS["paper"]}"/>',
-        svg_text(margin_left, 48, title, size=30, weight=700),
-        svg_text(margin_left, 78, subtitle, size=16, fill=COLORS["muted"]),
+        svg_text(margin_left, 42, title, size=28, weight=700),
+        svg_text(margin_left, 70, subtitle, size=15, fill=COLORS["muted"]),
     ]
 
     # Grid and y-axis labels.
@@ -102,7 +119,7 @@ def bar_chart_svg(
             f'<line x1="{margin_left}" y1="{y:.1f}" x2="{width - margin_right}" y2="{y:.1f}" '
             f'stroke="{COLORS["grid"]}" stroke-width="1"/>'
         )
-        parts.append(svg_text(margin_left - 12, y + 5, fmt(value), size=14, fill=COLORS["muted"], anchor="end"))
+        parts.append(svg_text(margin_left - 12, y + 5, fmt(value), size=13, fill=COLORS["muted"], anchor="end"))
 
     parts.append(
         f'<line x1="{margin_left}" y1="{margin_top}" x2="{margin_left}" y2="{margin_top + plot_h}" '
@@ -116,7 +133,7 @@ def bar_chart_svg(
     # Y-axis title.
     parts.append(
         f'<text x="36" y="{margin_top + plot_h / 2:.1f}" transform="rotate(-90 36 {margin_top + plot_h / 2:.1f})" '
-        f'font-family="Arial, Helvetica, sans-serif" font-size="16" fill="{COLORS["muted"]}" '
+        f'font-family="Arial, Helvetica, sans-serif" font-size="15" fill="{COLORS["muted"]}" '
         f'font-weight="600" text-anchor="middle">{y_label}</text>'
     )
 
@@ -132,20 +149,20 @@ def bar_chart_svg(
                 f'<rect x="{x:.1f}" y="{y:.1f}" width="{bar_w:.1f}" height="{bar_h:.1f}" rx="8" '
                 f'fill="{series_colors[series_idx]}"/>'
             )
-            parts.append(svg_text(x + bar_w / 2, y - 10, fmt(value), size=13, fill=COLORS["ink"], weight=600, anchor="middle"))
+            parts.append(svg_text(x + bar_w / 2, y - 10, fmt(value), size=12, fill=COLORS["ink"], weight=600, anchor="middle"))
 
         parts.append(svg_text(group_x + (len(values) * bar_w + (len(values) - 1) * inner_gap) / 2,
-                              margin_top + plot_h + 32, model, size=15, weight=600, anchor="middle"))
+                              margin_top + plot_h + 30, model, size=14, weight=600, anchor="middle"))
 
     # Legend.
-    legend_x = width - margin_right - 270
-    legend_y = 44
+    legend_x = width - margin_right - 255
+    legend_y = 28
     for idx, label in enumerate(series_labels):
-        item_x = legend_x + idx * 86
+        item_x = legend_x + idx * 82
         parts.append(
             f'<rect x="{item_x:.1f}" y="{legend_y:.1f}" width="18" height="18" rx="4" fill="{series_colors[idx]}"/>'
         )
-        parts.append(svg_text(item_x + 26, legend_y + 14, label, size=13, fill=COLORS["ink"]))
+        parts.append(svg_text(item_x + 26, legend_y + 14, label, size=12, fill=COLORS["ink"]))
 
     parts.append("</svg>")
     return "\n".join(parts)
@@ -156,17 +173,17 @@ def audit_flow_svg() -> str:
     height = 420
     parts = [
         svg_header(width, height),
-        "<title>Qwen audit flow</title>",
-        "<desc>Qwen heuristic positives and audit outcome</desc>",
+        "<title>Local to vLLM progression</title>",
+        "<desc>Why we moved from the original local setup to the closer partner vLLM matrix</desc>",
         f'<rect width="{width}" height="{height}" fill="{COLORS["paper"]}"/>',
-        svg_text(70, 54, "Figure 3. Qwen manual audit removed the apparent FITD signal", size=28, weight=700),
-        svg_text(70, 84, "The heuristic suggested weak success; manual review showed zero verified jailbreaks.", size=16, fill=COLORS["muted"]),
+        svg_text(70, 54, "Figure 3. Why we moved beyond the original local all-zero story", size=28, weight=700),
+        svg_text(70, 84, "The closer partner system finally produced harmful outputs, but the exact Qwen-family story stayed mixed.", size=16, fill=COLORS["muted"]),
     ]
 
     boxes = [
-        (80, 160, 250, 120, COLORS["paper_dark"], COLORS["ink"], "3 heuristic positives", "2 FITD + 1 FITD+Vigilant"),
-        (425, 160, 250, 120, "#fff4ec", COLORS["fitd"], "3 outputs reviewed", "All flagged outputs inspected manually"),
-        (770, 160, 250, 120, "#fff0f2", COLORS["danger"], "0 verified jailbreaks", "All were refusals or safety redirection"),
+        (80, 160, 250, 120, COLORS["paper_dark"], COLORS["ink"], "Local runs looked too clean", "Mostly zero harmful outputs across tested slices"),
+        (425, 160, 250, 120, "#fff4ec", COLORS["fitd"], "Partner vLLM runs changed that", "Clear harmful responses appeared on some models"),
+        (770, 160, 250, 120, "#fff0f2", COLORS["danger"], "Exact Qwen still needs care", "Some judged Qwen positives were explicit refusals"),
     ]
     for x, y, w, h, fill, stroke, title, subtitle in boxes:
         parts.append(
@@ -184,7 +201,7 @@ def audit_flow_svg() -> str:
             f'<polygon points="{x2},{y2} {x2 - 18},{y2 - 10} {x2 - 18},{y2 + 10}" fill="{COLORS["muted"]}"/>'
         )
 
-    parts.append(svg_text(550, 348, "Bottom line: Qwen did not produce any verified harmful completion in the audited slice.",
+    parts.append(svg_text(550, 348, "Bottom line: the closer system is more believable, but it still does not give us a clean Qwen-family replication.",
                           size=18, fill=COLORS["ink"], weight=600, anchor="middle"))
     parts.append("</svg>")
     return "\n".join(parts)
@@ -199,14 +216,14 @@ def blocker_boxes_svg() -> str:
         "<desc>Major reasons our results may differ from the paper</desc>",
         f'<rect width="{width}" height="{height}" fill="{COLORS["paper"]}"/>',
         svg_text(70, 54, "Figure 4. Why our reproduction can differ from the paper", size=28, weight=700),
-        svg_text(70, 84, "The failed reproduction is informative, but exact paper-match conditions were not fully met.", size=16, fill=COLORS["muted"]),
+        svg_text(70, 84, "The closer vLLM matrix reduced one gap, but several core paper-faithfulness gaps still remain.", size=16, fill=COLORS["muted"]),
     ]
 
     box_data = [
-        ("Model mismatch", "Qwen, Gemma 4, and local Llama 3 instead of the exact target stack.", COLORS["standard"], 80, 150),
-        ("Pipeline mismatch", "Main runs used scaffold FITD, not guaranteed full adaptive FITD.py behavior.", COLORS["fitd"], 560, 150),
-        ("Judge mismatch", "Qwen heuristic positives disappeared after manual audit.", COLORS["fitd_vigilant"], 80, 310),
-        ("Compute/runtime", "CPU-only HF runs and mixed serving paths kept study small and not perfectly uniform.", COLORS["danger"], 560, 310),
+        ("Runtime got closer", "The partner GPU used vLLM, which is much closer to the paper than our earlier HF CPU path.", COLORS["standard"], 80, 150),
+        ("Prompt path still differs", "The new matrix still used scaffold FITD on AdvBench, not the author raw-target path we wanted for the cleanest Qwen check.", COLORS["fitd"], 560, 150),
+        ("Judge still differs", "The partner matrix used a local Qwen 2.5 judge, and some exact-Qwen positives were explicit refusals.", COLORS["fitd_vigilant"], 80, 310),
+        ("Adaptive loop still missing", "We still did not reproduce the paper's full adaptive FITD.py pipeline with GPT-4o-mini assistant behavior.", COLORS["danger"], 560, 310),
     ]
 
     for title, body, color, x, y in box_data:
@@ -222,43 +239,24 @@ def blocker_boxes_svg() -> str:
 
 def build_figures() -> None:
     ensure_dirs()
-
-    qwen_std = read_summary("results/20260411_qwen25-3b_advbench20_standard/summary.json")
-    qwen_fitd = read_summary("results/20260411_qwen25-3b_advbench20_fitd/summary.json")
-    qwen_vig = read_summary("results/20260411_qwen25-3b_advbench20_fitd_vigilant/summary.json")
-    gemma_std = read_summary("results/20260415_gemma4-e4b_advbench10_standard/summary.json")
-    gemma_fitd = read_summary("results/20260415_gemma4-e4b_advbench10_fitd/summary.json")
-    gemma_vig = read_summary("results/20260415_gemma4-e4b_advbench10_fitd_vigilant/summary.json")
-    llama_std = read_summary("results/20260417_llama3-8b-ollama_advbench10_standard/summary.json")
-    llama_fitd = read_summary("results/20260417_llama3-8b-ollama_advbench10_fitd/summary.json")
-    llama_vig = read_summary("results/20260417_llama3-8b-ollama_advbench10_fitd_vigilant/summary.json")
-
-    models = ["Qwen 2.5 3B", "Gemma 4 E4B", "Llama 3 8B"]
     series_labels = ["Standard", "FITD", "FITD+V"]
     series_colors = [COLORS["standard"], COLORS["fitd"], COLORS["fitd_vigilant"]]
-
-    asr_values = [
-        [qwen_std["asr"], gemma_std["asr"], llama_std["asr"]],
-        [qwen_fitd["asr"], gemma_fitd["asr"], llama_fitd["asr"]],
-        [qwen_vig["asr"], gemma_vig["asr"], llama_vig["asr"]],
-    ]
-    refusal_values = [
-        [qwen_std["refusal_rate"], gemma_std["refusal_rate"], llama_std["refusal_rate"]],
-        [qwen_fitd["refusal_rate"], gemma_fitd["refusal_rate"], llama_fitd["refusal_rate"]],
-        [qwen_vig["refusal_rate"], gemma_vig["refusal_rate"], llama_vig["refusal_rate"]],
-    ]
 
     write_all(
         "figure_asr_by_model.svg",
         bar_chart_svg(
-            title="Figure 1. Heuristic attack success rate by model and condition",
-            subtitle="Only Qwen showed a small heuristic lift, and manual audit later removed it.",
-            y_label="Heuristic ASR",
-            models=models,
+            title="Figure 1. Judge-rescored ASR in the partner vLLM matrix",
+            subtitle="The closer GPU/vLLM setup did produce harmful outputs, but the lift was highly model-dependent.",
+            y_label="Judge ASR",
+            models=VLLM_MATRIX_MODELS,
             series_labels=series_labels,
-            values=asr_values,
+            values=[
+                VLLM_MATRIX_STANDARD,
+                VLLM_MATRIX_FITD,
+                VLLM_MATRIX_FITD_VIGILANT,
+            ],
             series_colors=series_colors,
-            ymax=0.12,
+            ymax=0.80,
             fmt=lambda v: f"{v:.2f}",
         ),
     )
@@ -266,14 +264,18 @@ def build_figures() -> None:
     write_all(
         "figure_refusal_rate_by_model.svg",
         bar_chart_svg(
-            title="Figure 2. Refusal rate by model and condition",
-            subtitle="Gemma 4 and Llama 3 refused every tested prompt across all three settings.",
-            y_label="Refusal rate",
-            models=models,
+            title="Figure 2. Exact paper-family Qwen models in the partner vLLM matrix",
+            subtitle="The closer runtime produced judged positives, but FITD did not show a strong Qwen-family lift.",
+            y_label="Judge ASR",
+            models=VLLM_QWEN_MODELS,
             series_labels=series_labels,
-            values=refusal_values,
+            values=[
+                VLLM_QWEN_STANDARD,
+                VLLM_QWEN_FITD,
+                VLLM_QWEN_FITD_VIGILANT,
+            ],
             series_colors=series_colors,
-            ymax=1.0,
+            ymax=0.16,
             fmt=lambda v: f"{v:.2f}",
         ),
     )
