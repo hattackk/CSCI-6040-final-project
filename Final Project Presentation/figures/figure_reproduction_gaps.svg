@@ -3,17 +3,17 @@
 <desc>Major reasons our results may differ from the paper</desc>
 <rect width="1100" height="520" fill="#f8fafc"/>
 <text x="70.0" y="54.0" font-family="Arial, Helvetica, sans-serif" font-size="28" fill="#10141b" font-weight="700" text-anchor="start">Figure 4. Why our reproduction can differ from the paper</text>
-<text x="70.0" y="84.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#7b8a9a" font-weight="400" text-anchor="start">The failed reproduction is informative, but exact paper-match conditions were not fully met.</text>
+<text x="70.0" y="84.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#7b8a9a" font-weight="400" text-anchor="start">The closer vLLM matrix reduced one gap, but several core paper-faithfulness gaps still remain.</text>
 <rect x="80" y="150" width="420" height="120" rx="20" fill="#ffffff" stroke="#7fe7ff" stroke-width="3"/>
-<text x="104.0" y="186.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#7fe7ff" font-weight="700" text-anchor="start">Model mismatch</text>
-<text x="104.0" y="218.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">Qwen, Gemma 4, and local Llama 3 instead of the exact target stack.</text>
+<text x="104.0" y="186.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#7fe7ff" font-weight="700" text-anchor="start">Runtime got closer</text>
+<text x="104.0" y="218.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">The partner GPU used vLLM, which is much closer to the paper than our earlier HF CPU path.</text>
 <rect x="560" y="150" width="420" height="120" rx="20" fill="#ffffff" stroke="#ff9c49" stroke-width="3"/>
-<text x="584.0" y="186.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff9c49" font-weight="700" text-anchor="start">Pipeline mismatch</text>
-<text x="584.0" y="218.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">Main runs used scaffold FITD, not guaranteed full adaptive FITD.py behavior.</text>
+<text x="584.0" y="186.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff9c49" font-weight="700" text-anchor="start">Prompt path still differs</text>
+<text x="584.0" y="218.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">The new matrix still used scaffold FITD on AdvBench, not the author raw-target path we wanted for the cleanest Qwen check.</text>
 <rect x="80" y="310" width="420" height="120" rx="20" fill="#ffffff" stroke="#5de2a5" stroke-width="3"/>
-<text x="104.0" y="346.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#5de2a5" font-weight="700" text-anchor="start">Judge mismatch</text>
-<text x="104.0" y="378.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">Qwen heuristic positives disappeared after manual audit.</text>
+<text x="104.0" y="346.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#5de2a5" font-weight="700" text-anchor="start">Judge still differs</text>
+<text x="104.0" y="378.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">The partner matrix used a local Qwen 2.5 judge, and some exact-Qwen positives were explicit refusals.</text>
 <rect x="560" y="310" width="420" height="120" rx="20" fill="#ffffff" stroke="#ff5c6c" stroke-width="3"/>
-<text x="584.0" y="346.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff5c6c" font-weight="700" text-anchor="start">Compute/runtime</text>
-<text x="584.0" y="378.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">CPU-only HF runs and mixed serving paths kept study small and not perfectly uniform.</text>
+<text x="584.0" y="346.0" font-family="Arial, Helvetica, sans-serif" font-size="24" fill="#ff5c6c" font-weight="700" text-anchor="start">Adaptive loop still missing</text>
+<text x="584.0" y="378.0" font-family="Arial, Helvetica, sans-serif" font-size="16" fill="#10141b" font-weight="400" text-anchor="start">We still did not reproduce the paper's full adaptive FITD.py pipeline with GPT-4o-mini assistant behavior.</text>
 </svg>

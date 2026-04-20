@@ -278,7 +278,7 @@
 						</div>
 						<div class="panel">
 							<h4 style="color: var(--green);">Q3</h4>
-							<p style="font-size: 0.78em;">Do added models like Gemma 4 and Llama 3 show the same vulnerability?</p>
+							<p style="font-size: 0.78em;">Does moving to a closer GPU and vLLM setup change what harmful behavior we actually observe?</p>
 						</div>
 					</div>
 					<div class="warning-banner" style="margin-top: 28px;">
@@ -305,108 +305,99 @@
 							<div class="small">Standard, FITD, FITD + Vigilant</div>
 						</div>
 					<div class="metric-card">
-						<h4>Models</h4>
-						<div class="value">3 + 1</div>
-						<div class="small">3-model scaffold matrix plus exact Qwen 2-7B follow-up</div>
+						<h4>Phases</h4>
+						<div class="value">2</div>
+						<div class="small">Local scaffold work plus partner GPU/vLLM matrix</div>
 					</div>
 				</div>
 					<table class="data-table">
 						<thead>
 							<tr>
-								<th>Model</th>
-								<th>Examples</th>
-								<th>Prompting variant</th>
+								<th>Phase</th>
+								<th>Dataset / Scale</th>
+								<th>Models</th>
 								<th>Judge</th>
 							</tr>
 						</thead>
 						<tbody>
 							<tr>
-								<td>Qwen/Qwen2.5-3B-Instruct</td>
-								<td>20</td>
-								<td>Scaffold FITD</td>
-									<td>Heuristic first pass + human review</td>
+								<td>Local scaffold matrix</td>
+								<td>AdvBench slices: 20 for Qwen, 10 for Gemma 4 and local Llama 3</td>
+								<td>Qwen 2.5 3B, Gemma 4, local Llama 3</td>
+								<td>Heuristic first pass, with manual review on key Qwen outputs</td>
 							</tr>
 							<tr>
-								<td>Qwen/Qwen2-7B-Instruct</td>
-								<td>10</td>
-								<td>Author `prompts1` on `jailbreakbench`</td>
-									<td>Heuristic first pass + human review</td>
+								<td>Closer Qwen follow-up</td>
+								<td>10-example `jailbreakbench` slice</td>
+								<td>Exact `Qwen/Qwen2-7B-Instruct` with copied author `prompts1` chain</td>
+								<td>Heuristic first pass + manual review</td>
 							</tr>
 							<tr>
-								<td>google/gemma-4-E4B-it</td>
-								<td>10</td>
-								<td>Scaffold FITD</td>
-									<td>Heuristic first pass</td>
-							</tr>
-							<tr>
-								<td>Meta-Llama-3-8B-Instruct (local Ollama GGUF)</td>
-								<td>10</td>
-								<td>Scaffold FITD</td>
-									<td>Heuristic first pass</td>
+								<td>Partner vLLM matrix</td>
+								<td>AdvBench first 25 examples, 15 matrix cells</td>
+								<td>Mistral 7B, Llama 3 8B, Llama 3.1 8B, Qwen2 7B, Qwen1.5 7B</td>
+								<td>Local vLLM Qwen 2.5 7B judge</td>
 							</tr>
 						</tbody>
 					</table>
 					<div class="panel" style="margin-top: 18px; padding: 14px 18px;">
-						<p style="font-size: 0.62em; margin: 0;"><strong>Added closer check:</strong> after the cross-model scaffold matrix, we also ran the exact `Qwen/Qwen2-7B-Instruct` family on the official author `prompts1` chains over a 10-example `jailbreakbench` slice.</p>
+						<p style="font-size: 0.62em; margin: 0;"><strong>What changed late:</strong> the partner GPU/vLLM matrix finally produced harmful outputs on some models, which made the attack environment more believable than our original all-zero-heavy local story.</p>
 					</div>
-					<p class="small-note">Important caveat: even with that added check, we still did not match the paper's full model stack, runtime stack, or adaptive `FITD.py` pipeline.</p>
+					<p class="small-note">Important caveat: even after the partner rerun, we still did not match the paper's full adaptive `FITD.py` pipeline, paper-faithful judge, or paper-faithful assistant model.</p>
 					<aside class="notes">
-						Matthew: walk through dataset, conditions, and models.
-						Be clear that these are real experiments, but not a perfect paper-match stack.
-						Also mention the later exact-model Qwen author-prompt check so this does not sound like a scaffold-only project.
-						Frame this as a good-faith reproduction attempt, not a claim that a negative result automatically disproves the paper.
+						Matthew: walk through the two phases cleanly.
+						Start with the original local scaffold work, then the closer exact Qwen follow-up, then the partner GPU/vLLM matrix.
+						The point is that we progressively reduced some setup weaknesses, even though we still did not fully match the paper.
 					</aside>
 				</section>
 
 				<section>
 					<div class="kicker">Result 1</div>
-					<h2>Qwen: Heuristic Lift Before Manual Audit</h2>
+					<h2>Why We Kept Pushing Closer</h2>
 					<div class="panel" style="margin-top: 18px;">
-						<img class="deck-image" src="figures/figure_asr_by_model.svg" style="width: 100%; height: 410px; object-fit: contain; background: #f8fafc;">
+						<img class="deck-image" src="figures/figure_qwen_audit_flow.svg" style="width: 100%; height: 300px; object-fit: contain; background: #f8fafc;">
 					</div>
 					<div class="warning-banner" style="margin-top: 24px;">
-							Qwen looked directionally positive twice: first on the Qwen 2.5 3B scaffold slice, then again on the exact Qwen 2-7B author slice. But both signals started as automated first-pass scores.
+							Our original local runs often looked too clean, so we used the partner GPU/vLLM system to test whether the pipeline was missing harmful behavior entirely.
 					</div>
 					<aside class="notes">
-						Matthew: this is the slide where the story seems to support the paper.
-						Standard was 0, FITD was 2 out of 20, and FITD plus vigilant was 1 out of 20.
-						Then mention the closer exact-model author-prompt check: standard was 0 out of 10, author FITD was 2 out of 10, and author FITD plus vigilant was 0 out of 10.
-						End by saying that once we checked the actual outputs, the signal changed.
-						Handoff to Chris here.
+						Matthew: explain the motivation for the partner rerun.
+						A failed reproduction is fine, but a system that almost never produces harmful outputs can also just be too weak or too refusal-heavy.
+						End on the transition: the closer vLLM system did produce harmful outputs, and Chris will show where.
 					</aside>
 				</section>
 
 				<section>
 					<div class="kicker">Result 2</div>
-						<h2>Human Review Changed The Signal</h2>
+						<h2>The Closer vLLM Matrix Produced Harmful Outputs</h2>
 					<div class="panel" style="margin-top: 18px;">
-						<img class="deck-image" src="figures/figure_qwen_audit_flow.svg" style="width: 100%; height: 300px; object-fit: contain; background: #f8fafc;">
+						<img class="deck-image" src="figures/figure_asr_by_model.svg" style="width: 100%; height: 410px; object-fit: contain; background: #f8fafc;">
 					</div>
 					<div class="success-banner" style="margin-top: 22px;">
-							Key lesson: across the reported Qwen runs, we manually reviewed 5 flagged outputs: 4 false positives and 1 harmful off-target author-chain case.
+							Mistral showed the clearest judged FITD lift in the closer partner system: 48% under standard prompting, 72% under FITD, and 52% under FITD plus vigilant.
 					</div>
 					<aside class="notes">
-						Chris: the human review changed the result.
-						The scaffold positives were all false positives.
-						On the exact Qwen 2-7B author slice, one positive was false and one was harmful off-target because the copied chain softened the final request.
-						Emphasize that the judge mattered almost as much as the prompts.
+						Chris: this is the slide that fixes the old all-zero problem.
+						Explain that the closer runtime finally produced judged harmful outputs on several models.
+						Give the Mistral numbers, then the average across all five models: 18.4 percent standard, 23.2 percent FITD, 18.4 percent vigilant.
+						Then narrow back and say that this broader signal still does not automatically prove the exact Qwen-family result.
 					</aside>
 				</section>
 
 				<section>
 					<div class="kicker">Result 3</div>
-					<h2>Additional Model Checks: Gemma 4 and Llama 3</h2>
+					<h2>Exact Qwen-Family Results Stayed Mixed</h2>
 					<div class="panel" style="margin-top: 18px;">
 						<img class="deck-image" src="figures/figure_refusal_rate_by_model.svg" style="width: 100%; height: 410px; object-fit: contain; background: #f8fafc;">
 					</div>
 					<div class="panel" style="margin-top: 24px;">
-						<p class="callout" style="font-size: 1.05em; color: var(--green);">Both added models stayed at 0.00 ASR in every condition.</p>
-						<p class="small-note">Llama 3 used a local Ollama GGUF path because Meta's Hugging Face repo was gated on this machine.</p>
+						<p class="callout" style="font-size: 1.05em; color: var(--green);">The closer setup did not turn the paper-family Qwen targets into a clean FITD success story.</p>
+						<p class="small-note">Some judged Qwen positives were explicit refusals, so the exact Qwen-family counts still need manual audit before they can be treated as real exploits.</p>
 					</div>
 					<aside class="notes">
-						Chris: explain why Gemma 4 and Llama 3 matter.
-						Both refused everything, so the result is harder to dismiss as a Qwen-only fluke.
-						Llama 3 also weakens the easy 'wrong model family' excuse.
+						Chris: keep this slide narrow.
+						Qwen2 7B was 12, 12, and 8 percent. Qwen1.5 7B was 12, 4, and 4 percent.
+						Then say the important part: some of the judged positives were explicit refusals, so this is still mixed evidence, not a clean replication.
 					</aside>
 				</section>
 
@@ -417,12 +408,13 @@
 						<img class="deck-image" src="figures/figure_reproduction_gaps.svg" style="width: 100%; height: 340px; object-fit: contain; background: #f8fafc;">
 					</div>
 					<div class="warning-banner" style="margin-top: 22px;">
-						The exact Qwen 2-7B follow-up narrowed the model criticism a lot, but full pipeline, runtime, and evaluation differences still matter.
+						The partner GPU/vLLM rerun reduced one major gap, but scaffold prompting, judge mismatch, and the missing adaptive loop still matter.
 					</div>
 					<aside class="notes">
 						Chris: frame this carefully.
-						We did not reproduce the effect under our setup, but we are not claiming the paper is false.
-						The gap is most likely remaining model mismatch, remaining pipeline mismatch, evaluation mismatch, and runtime limits.
+						We are closer than we were before, but still not at the paper.
+						Runtime got closer. Prompt path, judge, assistant, and adaptive FITD behavior still differ.
+						This is why we cannot jump from harmful outputs appearing to saying the paper was reproduced.
 					</aside>
 				</section>
 
@@ -430,27 +422,28 @@
 					<div class="kicker">Conclusion</div>
 					<h2 class="centered">Final Takeaway</h2>
 					<div class="panel" style="margin-top: 20px;">
-						<p class="callout centered">We did not reproduce the paper's strong FITD jailbreak effect in our local experiments.</p>
+						<p class="callout centered">The closer partner system produced harmful outputs, but we still did not get a clean reproduction of the paper's strongest Qwen-family FITD story.</p>
 					</div>
 					<div class="three-col" style="margin-top: 26px;">
 						<div class="panel">
 							<h4 style="color: var(--cyan);">What held up</h4>
-							<p style="font-size: 0.72em;">Real data, reproducible pipeline, saved artifacts, extension experiment, and a closer exact-model Qwen follow-up.</p>
+							<p style="font-size: 0.72em;">A closer GPU/vLLM setup, exact paper-family Qwen models, saved artifacts, and real harmful outputs on some targets.</p>
 						</div>
 						<div class="panel">
 							<h4 style="color: var(--orange);">What failed</h4>
-							<p style="font-size: 0.72em;">No faithful original-goal jailbreaks in the reported slices, even though the exact Qwen 2-7B follow-up produced one harmful off-target completion.</p>
+							<p style="font-size: 0.72em;">The exact Qwen-family result still was not a clean FITD win, and some judged positives were explicit refusals rather than real exploits.</p>
 						</div>
 						<div class="panel">
 							<h4 style="color: var(--green);">What we learned</h4>
-							<p style="font-size: 0.72em;">Evaluation method, prompt construction, and runtime setup all matter, and negative results are still useful evidence.</p>
+							<p style="font-size: 0.72em;">Runtime, judge choice, prompt path, and evaluation method all matter, and the path toward the paper is narrower than just running more models.</p>
 						</div>
 					</div>
-					<p class="small-note centered" style="margin-top: 24px;">Best fit for assignment: rigorous failed-reproduction analysis with documented blockers.</p>
+					<p class="small-note centered" style="margin-top: 24px;">Best fit for assignment: a stronger, closer, but still incomplete reproduction with documented remaining gaps.</p>
 					<aside class="notes">
 						Chris: deliver the conclusion directly.
-						We reproduced the scaffold, added a closer exact-model check, and still did not reproduce the paper's strong FITD effect.
-						This lands in the rigorous failed-reproduction category and still satisfies the assignment.
+						The old local all-zero picture was too weak.
+						The closer partner system is more believable because it produced harmful outputs.
+						But the exact Qwen-family story is still mixed, so we stop at partial or failed reproduction, not full success.
 					</aside>
 				</section>
 
@@ -458,19 +451,19 @@
 					<div class="kicker">Next Steps</div>
 					<h2>What Would Strengthen This Further</h2>
 					<ul class="tight-list" style="margin-top: 24px;">
-						<li>Run larger or full AdvBench evaluations on at least one model</li>
-						<li>Add the remaining paper-family follow-up on `Qwen-1.5-7B-Chat`</li>
-						<li>Match the authors' full adaptive FITD pipeline beyond pre-generated prompt chains</li>
-						<li>Use stronger human or LLM-judge evaluation</li>
-						<li>Match the paper's vLLM-on-A100 serving stack more closely</li>
+						<li>Manually audit every judged positive in the partner vLLM matrix</li>
+						<li>Run the exact Qwen-family models on the author-chain path with the raw target preserved</li>
+						<li>Swap in the paper-faithful judge and assistant defaults</li>
+						<li>Match the authors' full adaptive FITD pipeline beyond scaffold FITD</li>
+						<li>Then scale the closest path up, instead of only broadening the matrix</li>
 					</ul>
 					<div class="panel" style="margin-top: 24px;">
-						<p style="font-size: 0.8em; margin: 0;">Today, the strongest honest conclusion is not "paper invalid," but "paper effect not reproduced in our tested conditions."</p>
+						<p style="font-size: 0.8em; margin: 0;">Today, the strongest honest conclusion is not "paper reproduced," but "closer setup, real harmful outputs, still incomplete exact-Qwen replication."</p>
 					</div>
 					<aside class="notes">
-						Chris: close fast.
-						Future work is larger coverage, closer pipeline matching, and a stronger judge.
-						End on: we ran the comparison honestly, checked the outputs carefully, and followed the evidence where it led.
+						Chris: keep this tight.
+						The next best work is not generic more compute.
+						It is exact-Qwen author/raw reruns, manual audit of judged positives, paper-faithful judge and assistant, and then the adaptive FITD loop.
 					</aside>
 				</section>
 
