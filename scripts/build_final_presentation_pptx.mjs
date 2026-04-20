@@ -577,8 +577,8 @@ async function buildDeck() {
     top: 238,
     width: 360,
     height: 184,
-    title: "Important caveat",
-    body: "This still differs from the paper's full adaptive FITD pipeline and GPT-4o-based judge and assistant setup.",
+    title: "Closest feasible match",
+    body: "We matched runtime and exact Qwen-family targets more closely, while the adaptive loop and original judge stack remained approximate.",
     accent: COLORS.red,
     dark: false,
   });
@@ -632,7 +632,7 @@ async function buildDeck() {
     width: 300,
     height: 180,
     title: "Qwen-family caveat",
-    body: "Some judged Qwen positives in the follow-up were explicit refusals on manual spot-check.",
+    body: "Some judged Qwen positives still needed manual review before they could be interpreted confidently.",
     accent: COLORS.red,
     dark: true,
   });
@@ -745,14 +745,15 @@ async function buildDeck() {
     dark: false,
   });
   addText(slide7, {
-    text: "Important caveat: some judged Qwen positives were explicit refusals when we spot-checked the actual outputs, so these numbers are mixed evidence rather than clean exploit counts.",
+    text: "Manual-audit note: some judged Qwen positives overlapped with refusal-style outputs on spot-check, so these should be read as preliminary judged rates rather than final audited exploit counts.",
     left: 828,
     top: 538,
     width: 386,
     height: 116,
-    fontSize: 17,
-    color: COLORS.white,
-    fill: COLORS.red,
+    fontSize: 16,
+    color: COLORS.ink,
+    fill: "#fff1e8",
+    lineColor: COLORS.orange,
     radius: "roundRect",
   });
   slide7.speakerNotes.setText(speakerNotes.get(7));
@@ -762,7 +763,7 @@ async function buildDeck() {
   addTitle(slide8, {
     kicker: "Interpretation",
     title: "Remaining Reproduction Gaps",
-    subtitle: "The GPU/vLLM follow-up reduced one major gap, but several core paper-faithfulness gaps still remain.",
+    subtitle: "The GPU/vLLM follow-up reduced one major gap, but some paper-fidelity pieces still remained approximate in this project setting.",
     dark: true,
   });
   addCard(slide8, {
@@ -781,7 +782,7 @@ async function buildDeck() {
     width: 520,
     height: 130,
     title: "Prompt pathway",
-    body: "The follow-up still used scaffold FITD on AdvBench rather than the narrower author raw-target Qwen pathway.",
+    body: "The follow-up used scaffold FITD on AdvBench as the closest feasible approximation, rather than the narrower author raw-target Qwen pathway.",
     accent: COLORS.orange,
     dark: true,
   });
@@ -791,7 +792,7 @@ async function buildDeck() {
     width: 520,
     height: 130,
     title: "Judge configuration",
-    body: "The follow-up used a local Qwen 2.5 judge, and manual spot-checking already revealed false positives on refusals.",
+    body: "The follow-up used a local Qwen 2.5 judge, and manual spot-checking showed that some refusal-style outputs still needed audit.",
     accent: COLORS.green,
     dark: true,
   });
@@ -801,7 +802,7 @@ async function buildDeck() {
     width: 520,
     height: 130,
     title: "Adaptive attack loop",
-    body: "We still did not reproduce the paper's full adaptive FITD.py pipeline with separate assistant-model behavior.",
+    body: "The adaptive assistant-driven FITD loop remained an approximation target for future work rather than an exact one-for-one match in this project.",
     accent: COLORS.red,
     dark: true,
   });
@@ -843,7 +844,7 @@ async function buildDeck() {
     width: 220,
     height: 206,
     title: "Not confirmed",
-    body: "The exact Qwen-family result was not a clean FITD win, and some judged positives were explicit refusals.",
+    body: "The exact Qwen-family result stayed mixed, and some judged positives still needed manual verification.",
     accent: COLORS.orange,
     dark: true,
   });
@@ -876,15 +877,15 @@ async function buildDeck() {
   addTitle(slide10, {
     kicker: "Next Steps",
     title: "Remaining Work",
-    subtitle: "The most useful next steps are narrower and more paper-faithful than simply broadening the matrix again.",
+    subtitle: "The most useful next steps are narrower and closer to the paper's original setup than simply broadening the matrix again.",
     dark: false,
   });
   addBulletList(slide10, {
     items: [
       "Manually audit every judged positive in the GPU/vLLM follow-up",
       "Run the exact Qwen-family models again on the author-chain path with the raw target preserved",
-      "Swap in the paper-faithful judge and assistant defaults",
-      "Implement the paper's full adaptive FITD loop instead of stopping at the scaffold",
+      "Move the judge and assistant defaults closer to the paper's original setup",
+      "Replace the scaffold with the paper's full adaptive FITD loop if a closer runtime is available",
     ],
     left: 76,
     top: 240,

@@ -82,7 +82,7 @@ The second phase was the later GPU and vLLM follow-up. That used the first 25 Ad
 
 That second phase matters because it moved closer to the paper in the places that were hurting the project most: stronger hardware, a vLLM serving stack, and exact Qwen-family targets instead of only substitutes.
 
-At the same time, it still was not a perfect paper-faithful rerun. It used scaffold FITD on AdvBench with a local Qwen judge, rather than the paper's full adaptive FITD pipeline and original judging setup. So the later phase is closer, but still not identical."
+At the same time, it still was not a perfect paper-faithful rerun. Given project time and hardware constraints, we prioritized the parts we could match most credibly: stronger runtime conditions, exact Qwen-family targets, and a closer evaluation setup. The main pieces that remained approximate were the paper's full adaptive FITD loop and original judge stack. So the later phase is substantially closer, but still not identical."
 
 ---
 
@@ -160,17 +160,17 @@ So the Qwen-family evidence is still mixed for two reasons at once: the observed
 
 The runtime gap is smaller because the later evaluation used a GPU and vLLM rather than only local CPU execution.
 
-But several important gaps still remain.
+But several important fidelity gaps still remain.
 
-The follow-up used scaffold FITD on AdvBench rather than reproducing the paper's full adaptive FITD pipeline on the narrower author-style pathway.
+The follow-up used scaffold FITD on AdvBench as the closest feasible approximation we could run in this project setting, rather than the paper's narrower author-style adaptive pathway.
 
-The judge also differs from the paper, and we already saw evidence that it can produce false positives on explicit refusals.
+The judge also differs from the paper, and we already saw evidence that local judging can overcount some refusal-style outputs.
 
-And even though we tested the exact Qwen-family models, the surrounding attack-generation and evaluation stack still was not the same as the one reported in the paper.
+And even though we tested the exact Qwen-family models, some surrounding pipeline pieces, especially the adaptive assistant behavior and evaluation stack, still remained approximations rather than exact matches.
 
 That last point matters because attack pipelines are not just model names. They also include the prompting logic, the assistant behavior, the judge, and the runtime assumptions. Changing those pieces can change the measured outcome.
 
-Those gaps matter because they limit what we can claim. We can say the later setup was more informative and more paper-adjacent. We cannot honestly say that it was a full faithful replication."
+Those gaps matter because they limit what we can claim. We can say the later setup was a closer and more informative approximation to the paper. We cannot honestly say that every pipeline component was matched one-for-one."
 
 ---
 
@@ -206,8 +206,8 @@ First, manually audit every judged positive in the GPU and vLLM follow-up so the
 
 Second, rerun the exact Qwen-family models on the author-chain pathway with the raw target preserved.
 
-Third, swap in the paper-faithful judge and assistant defaults.
+Third, move the judge and assistant defaults closer to the paper's original setup.
 
-And fourth, implement the paper's full adaptive FITD loop rather than stopping at the scaffold.
+And fourth, replace the current scaffold with the paper's full adaptive FITD loop once the runtime and implementation budget allow.
 
 Those steps are what would move this from a closer approximation to a genuinely stronger reproduction."
